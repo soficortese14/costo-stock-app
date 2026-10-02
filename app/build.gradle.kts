@@ -44,6 +44,16 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Navegación entre pantallas
+    implementation(libs.androidx.navigation.compose)
+    // Persistencia local de la sesión y las preferencias
+    implementation(libs.androidx.datastore.preferences)
+    // Serializa objetos a JSON para poder guardarlos en DataStore
+    implementation(libs.gson)
+    // Permite usar viewModel() dentro de un Composable (MVVM)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
