@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
+import cl.duoc.costostock.ui.views.SplashScreen
 
 /**
  * navegacion de la aplicacion.
@@ -20,7 +21,7 @@ fun AppNavigation(navController: NavHostController) {
         startDestination = Rutas.SPLASH //cual pantalla se muestra al abrir la app
     ) {
         composable(Rutas.SPLASH) {
-            PantallaEnConstruccion("Splash", "Sofia")
+            SplashScreen(navController)
         }
         composable(Rutas.ONBOARDING) {
             PantallaEnConstruccion("Onboarding y permisos", "Sofia")
