@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
 import cl.duoc.costostock.navigation.AppNavigation
 import cl.duoc.costostock.ui.theme.CostoStockTheme
+import cl.duoc.costostock.ui.views.LoginScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,8 +17,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CostoStockTheme {
                 // Controlador que recuerda en que pantalla estamos
-                val navController = rememberNavController()
-                AppNavigation(navController)
+                //val navController = rememberNavController()
+                //AppNavigation(navController)
+
+                LoginScreen()
             }
         }
     }
