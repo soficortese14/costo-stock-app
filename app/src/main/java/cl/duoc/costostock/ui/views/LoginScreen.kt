@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import cl.duoc.costostock.ui.viewmodel.LoginViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 
 @Composable
 fun LoginScreen(viewModel : LoginViewModel = viewModel()) {
@@ -37,11 +38,13 @@ fun LoginScreen(viewModel : LoginViewModel = viewModel()) {
         OutlinedTextField(
             value = contrasena,
             onValueChange = { textoIn -> viewModel.actualizarContrasena(textoIn)},
-            label = { Text("Contraseña") }
+            label = { Text("Contraseña") },
+            visualTransformation = PasswordVisualTransformation()
+
         )
 
         Button(
-            onClick = {/*backend*/}
+            onClick = { viewModel.iniciarSesion() }
         ) {
             Text("Iniciar sesión")
         }

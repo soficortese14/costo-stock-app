@@ -22,4 +22,18 @@ class LoginViewModel : ViewModel(){
         _contrasena.value = nuevoTexto
     }
 
+    fun iniciarSesion (){
+
+        val correoIn = _correo.value
+        val contrasenaIn = _contrasena.value
+
+        //Validacion
+        if (correoIn.isBlank() || contrasenaIn.isBlank()){
+            //Mensaje en rojo advertencia
+            return
+        }
+
+        //éxito para conectar al backend y comprobar credenciales
+    }
+
 }
