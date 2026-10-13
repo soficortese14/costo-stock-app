@@ -7,8 +7,7 @@ import cl.duoc.costostock.data.AppState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistroScreen(
+fun RegistroProveedor(
     navController: NavController,
     appState: AppState){
-
 }
