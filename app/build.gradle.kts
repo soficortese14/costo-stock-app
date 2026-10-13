@@ -39,6 +39,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -53,6 +54,8 @@ dependencies {
     implementation(libs.gson)
     // Permite usar viewModel() dentro de un Composable (MVVM)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // Recurso nativo: ubicacion del dispositivo (GPS, antenas y wifi)
+    implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
@@ -37,7 +38,7 @@ fun AppNavigation(navController: NavHostController) {
             PantallaEnConstruccion("Postulacion de proveedor", "Integrante 4")
         }
         composable(Rutas.OFERTAS) {
-            PantallaEnConstruccion("Ofertas", "Por asignar")
+            OfertasScreen(navController)
         }
     }
 }
