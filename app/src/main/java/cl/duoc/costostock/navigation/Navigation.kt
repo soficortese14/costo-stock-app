@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
 
@@ -24,7 +25,7 @@ fun AppNavigation(navController: NavHostController) {
             SplashScreen(navController)
         }
         composable(Rutas.ONBOARDING) {
-            PantallaEnConstruccion("Onboarding y permisos", "Sofia")
+            OnboardingScreen(navController)
         }
         composable(Rutas.LOGIN) {
             PantallaEnConstruccion("Login", "Integrante 2")
