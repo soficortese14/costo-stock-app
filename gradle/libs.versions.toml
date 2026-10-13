@@ -1,5 +1,7 @@
 [versions]
 agp = "9.4.1"
+ksp = "2.2.10-2.0.2"
+room = "2.8.0"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -12,8 +14,16 @@ navigationCompose = "2.10.1"
 datastorePreferencesVersion = "1.1.1"
 gson = "2.13.2"
 lifecycleViewmodelCompose = "2.8.7"
+navigationRuntimeKtx = "2.10.2"
 
 [libraries]
+
+
+androidx-room-runtime  = { group = "androidx.room", name = "room-runtime",  version.ref = "room" }
+androidx-room-ktx      = { group = "androidx.room", name = "room-ktx",      version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -32,7 +42,9 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

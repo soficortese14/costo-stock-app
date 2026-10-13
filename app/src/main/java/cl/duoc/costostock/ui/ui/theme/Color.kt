@@ -1,4 +1,4 @@
-package cl.duoc.costostock.ui.theme
+package cl.duoc.costostock.ui.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
