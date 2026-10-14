@@ -7,61 +7,65 @@ import androidx.compose.runtime.Composable
 /**
  * Esquema de color de Costo Stock.
  *
- * Cada color de la paleta del cliente se asigna al rol de Material 3 que le
- * corresponde. Los roles que empiezan con "on" son el color del texto o del
- * ícono que va ENCIMA de ese fondo.
+ * Cada color de la marca se asigna al rol de Material 3 que le corresponde.
+ * Los roles que empiezan con "on" son el color del texto o del icono que va
+ * ENCIMA de ese fondo, y por eso van siempre en pareja.
  *
- * El naranja coral está reservado para urgencia: contador regresivo, tag de
- * descuento y botón Comprar. Usarlo en otro lugar le quita su función de señal.
+ * Como las pantallas piden roles y no colores fijos, cambiar la identidad
+ * visual de toda la app se hace solo en este archivo.
+ *
+ * El verde esta reservado para el impacto ambiental (tertiary) y el rojo
+ * para la urgencia (error): contadores por vencer y stock bajo. Usarlos en
+ * otro lugar les quita su funcion de senal.
  */
 private val EsquemaCostoStock = lightColorScheme(
-    // Verde principal: top bars, botones primarios, navegación
-    primary = VerdeBosque,
+    // Naranja de marca: top bars, botones primarios, chips seleccionados
+    primary = NaranjaMarca,
     onPrimary = BlancoPuro,
-    primaryContainer = VerdeMenta,
-    onPrimaryContainer = VerdeProfundo,
+    primaryContainer = DuraznoSuave,
+    onPrimaryContainer = CafeProfundo,
 
-    // Verde salvia: iconografía secundaria, chips, bordes
-    secondary = VerdeSalvia,
+    // Negro: acciones secundarias, como en la web
+    secondary = NegroCarbon,
     onSecondary = BlancoPuro,
-    secondaryContainer = VerdeMenta,
-    onSecondaryContainer = VerdeProfundo,
+    secondaryContainer = DuraznoSuave,
+    onSecondaryContainer = CafeProfundo,
 
-    // Coral: solo urgencia. Texto oscuro encima, porque el blanco no se lee.
-    tertiary = NaranjaCoral,
-    onTertiary = GrisOscuro,
-    tertiaryContainer = NaranjaCoral,
-    onTertiaryContainer = GrisOscuro,
+    // Verde: SOLO impacto ambiental, badges de CO2 evitado
+    tertiary = VerdeEco,
+    onTertiary = BlancoPuro,
+    tertiaryContainer = VerdeMenta,
+    onTertiaryContainer = VerdeProfundo,
 
     // Fondo general de las pantallas
-    background = BlancoEco,
-    onBackground = GrisOscuro,
+    background = CremaFondo,
+    onBackground = CafeTexto,
 
     // Superficies: cards, modales, bottom sheets
     surface = BlancoPuro,
-    onSurface = GrisOscuro,
-    surfaceVariant = VerdeMenta,
-    onSurfaceVariant = GrisMedio,
+    onSurface = CafeTexto,
+    surfaceVariant = DuraznoSuave,
+    onSurfaceVariant = GrisCalido,
 
-    outline = VerdeBorde,
-    outlineVariant = VerdeBorde,
+    outline = BordeSuave,
+    outlineVariant = BordeSuave,
 
-    // Expirado y stock bajo
+    // Urgencia: contador por vencer, oferta expirada, stock bajo
     error = RojoError,
     onError = BlancoPuro,
 )
 
 /**
- * Tema de la aplicación. Envuelve toda la UI para que cualquier Composable
+ * Tema de la aplicacion. Envuelve toda la UI para que cualquier Composable
  * pueda leer los colores con MaterialTheme.colorScheme.
  *
- * No usa color dinámico a propósito. En Android 12 en adelante, el color
- * dinámico toma los colores del fondo de pantalla del usuario y reemplaza los
- * de la app: la paleta del cliente no se aplicaría nunca.
+ * No usa color dinamico a proposito. En Android 12 en adelante, el color
+ * dinamico toma los colores del fondo de pantalla del usuario y reemplaza
+ * los de la app: la identidad de la marca no se aplicaria nunca.
  *
- * Tampoco define esquema oscuro: el cliente entregó solo la paleta clara. Si
- * más adelante se necesita, se agrega un darkColorScheme acá y se vuelve a
- * recibir el parámetro darkTheme.
+ * Tampoco define esquema oscuro: la marca solo tiene version clara. Si mas
+ * adelante se necesita, se agrega un darkColorScheme aqui y se vuelve a
+ * recibir el parametro darkTheme.
  */
 @Composable
 fun CostoStockTheme(

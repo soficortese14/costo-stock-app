@@ -63,7 +63,7 @@ fun SplashScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Rescata excedentes, reduce tu huella",
+                text = "Nada se pierde, todos ganamos",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
