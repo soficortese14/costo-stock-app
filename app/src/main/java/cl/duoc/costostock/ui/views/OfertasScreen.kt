@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,13 +14,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -35,13 +45,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.Perfil
+import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.data.Ubicacion
 import cl.duoc.costostock.ui.viewmodel.EstadoUbicacion
 import cl.duoc.costostock.ui.viewmodel.OfertasViewModel
 
 /**
- * CO-01 Ofertas. Muestra la ubicacion del usuario obtenida por GPS
- * y, mas adelante, el listado de ofertas cercanas.
+ * CO-01 Ofertas. Muestra la ubicacion obtenida por GPS y el catalogo
+ * de excedentes guardado en Room, filtrable por categoria.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +64,12 @@ fun OfertasScreen(
 ) {
     val estado by viewModel.estado.collectAsState()
     val radioKm by viewModel.radioKm.collectAsState()
+    val ofertas by viewModel.ofertas.collectAsState()
+    val categoria by viewModel.categoria.collectAsState()
+    val ahora by viewModel.ahora.collectAsState()
+    val perfil by viewModel.perfilActivo.collectAsState()
+
+    val esProveedor = perfil == Perfil.PROVEEDOR
 
     Scaffold(
         topBar = {
@@ -59,45 +78,127 @@ fun OfertasScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                title = { Text("Costo Stock") }
+                title = {
+                    Text(
+                        if (esProveedor) "Mis publicaciones" else "Costo Stock"
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate(Rutas.PERFIL) }) {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Mi perfil",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
             )
+        },
+        floatingActionButton = {
+            // Publicar ofertas es una accion del proveedor: un comprador
+            // no deberia poder cargar productos
+            if (esProveedor) {
+                ExtendedFloatingActionButton(
+                    onClick = { navController.navigate(Rutas.PUBLICAR_OFERTA) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Publicar")
+                }
+            }
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
         ) {
             TarjetaUbicacion(
                 estado = estado,
                 radioKm = radioKm,
-                onReintentar = { viewModel.cargarUbicacion() }
+                onReintentar = { viewModel.cargarUbicacion() },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
-            Spacer(Modifier.height(24.dp))
+            FilaCategorias(
+                seleccionada = categoria,
+                onSeleccionar = { viewModel.cambiarCategoria(it) }
+            )
 
-            // Aqui va el listado de ofertas cuando este construido
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Aun no hay ofertas publicadas",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Cuando los proveedores publiquen sus excedentes, " +
-                        "apareceran aqui ordenados por cercania.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
+            Spacer(Modifier.height(8.dp))
+
+            if (ofertas.isEmpty()) {
+                SinOfertas()
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = ofertas,
+                        key = { it.id }
+                    ) { oferta ->
+                        OfertaCard(
+                            oferta = oferta,
+                            ahora = ahora,
+                            onClick = {
+                                navController.navigate(Rutas.detalle(oferta.id))
+                            }
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+/** Chips de categoria. El seleccionado se pinta con el verde principal. */
+@Composable
+private fun FilaCategorias(
+    seleccionada: String,
+    onSeleccionar: (String) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(OfertaRepository.CATEGORIAS) { categoria ->
+            FilterChip(
+                selected = categoria == seleccionada,
+                onClick = { onSeleccionar(categoria) },
+                label = { Text(categoria) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun SinOfertas() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "No hay ofertas en esta categoria",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Prueba con otra categoria o amplia el radio de busqueda.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -109,10 +210,11 @@ fun OfertasScreen(
 private fun TarjetaUbicacion(
     estado: EstadoUbicacion,
     radioKm: Int,
-    onReintentar: () -> Unit
+    onReintentar: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -225,7 +327,7 @@ private fun ContenidoSinUbicacion(
         )
         TextButton(
             onClick = onReintentar,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            contentPadding = PaddingValues(0.dp)
         ) {
             Text("Reintentar")
         }

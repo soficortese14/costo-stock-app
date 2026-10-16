@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -56,6 +57,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     // Recurso nativo: ubicacion del dispositivo (GPS, antenas y wifi)
     implementation(libs.play.services.location)
+
+    // Persistencia local en SQLite
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Carga de imagenes desde URL
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

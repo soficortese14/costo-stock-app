@@ -20,4 +20,22 @@ object Rutas {
 
     // Módulo comprador (CO-01)
     const val OFERTAS = "ofertas"
+
+    /*
+     * Detalle de producto (CO-05).
+     *
+     * Esta ruta lleva un argumento: el id de la oferta que hay que mostrar.
+     * En el NavHost se declara con el hueco {ofertaId}, y al navegar se
+     * reemplaza por el id real usando la funcion detalle() de mas abajo.
+     */
+    const val ARG_OFERTA_ID = "ofertaId"
+    const val DETALLE = "detalle/{$ARG_OFERTA_ID}"
+
+    /** Arma la ruta concreta: detalle(3) devuelve "detalle/3". */
+    fun detalle(ofertaId: Long): String = "detalle/$ofertaId"
+
+    const val PERFIL = "perfil"
+
+    // Modulo proveedor (PR-03)
+    const val PUBLICAR_OFERTA = "publicar_oferta"
 }

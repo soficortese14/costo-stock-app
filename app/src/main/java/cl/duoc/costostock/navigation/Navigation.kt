@@ -8,8 +8,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import cl.duoc.costostock.ui.views.DetalleScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
+import cl.duoc.costostock.ui.views.PerfilScreen
+import cl.duoc.costostock.ui.views.PublicarOfertaScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
 
@@ -86,6 +91,23 @@ fun AppNavigation(navController: NavHostController) {
         }
         composable(Rutas.OFERTAS) {
             OfertasScreen(navController)
+        }
+        composable(Rutas.PERFIL) {
+            PerfilScreen(navController)
+        }
+        composable(Rutas.PUBLICAR_OFERTA) {
+            PublicarOfertaScreen(navController)
+        }
+        // El detalle recibe el id de la oferta dentro de la ruta.
+        // navArgument declara el tipo, para que llegue como Long y no texto.
+        composable(
+            route = Rutas.DETALLE,
+            arguments = listOf(
+                navArgument(Rutas.ARG_OFERTA_ID) { type = NavType.LongType }
+            )
+        ) { entrada ->
+            val ofertaId = entrada.arguments?.getLong(Rutas.ARG_OFERTA_ID) ?: 0L
+            DetalleScreen(navController = navController, ofertaId = ofertaId)
         }
     }
 }
