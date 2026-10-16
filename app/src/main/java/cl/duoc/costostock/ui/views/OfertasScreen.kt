@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.data.Ubicacion
 import cl.duoc.costostock.ui.viewmodel.EstadoUbicacion
 import cl.duoc.costostock.ui.viewmodel.OfertasViewModel
@@ -103,7 +104,13 @@ fun OfertasScreen(
                         items = ofertas,
                         key = { it.id }
                     ) { oferta ->
-                        OfertaCard(oferta = oferta, ahora = ahora)
+                        OfertaCard(
+                            oferta = oferta,
+                            ahora = ahora,
+                            onClick = {
+                                navController.navigate(Rutas.detalle(oferta.id))
+                            }
+                        )
                     }
                 }
             }
