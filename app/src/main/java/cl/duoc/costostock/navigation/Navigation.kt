@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import cl.duoc.costostock.ui.views.DetalleScreen
+import cl.duoc.costostock.ui.views.LoginScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PerfilScreen
@@ -81,7 +82,7 @@ fun AppNavigation(navController: NavHostController) {
             OnboardingScreen(navController)
         }
         composable(Rutas.LOGIN) {
-            PantallaEnConstruccion("Login", "Integrante 2")
+            LoginScreen()
         }
         composable(Rutas.REGISTRO) {
             PantallaEnConstruccion("Registro de comprador", "Integrante 3")

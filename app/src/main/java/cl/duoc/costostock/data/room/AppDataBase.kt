@@ -14,15 +14,18 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [
         ProveedorEntity::class,
-        OfertaEntity::class
+        OfertaEntity::class,
+        UsuarioEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun proveedorDAO(): ProveedorDAO
     abstract fun ofertaDAO(): OfertaDAO
+
+    abstract fun usuarioDAO(): UsuarioDAO
 
     companion object {
         // Volatile + synchronized: nos aseguramos de crear una ÚNICA instancia

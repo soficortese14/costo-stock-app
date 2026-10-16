@@ -17,10 +17,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CostoStockTheme {
                 // Controlador que recuerda en que pantalla estamos
-                //val navController = rememberNavController()
-                //AppNavigation(navController)
+                val navController = rememberNavController()
+                AppNavigation(navController)
 
-                LoginScreen()
+
             }
         }
     }
