@@ -34,6 +34,8 @@ object Rutas {
     /** Arma la ruta concreta: detalle(3) devuelve "detalle/3". */
     fun detalle(ofertaId: Long): String = "detalle/$ofertaId"
 
+    const val PERFIL = "perfil"
+
     // Modulo proveedor (PR-03)
     const val PUBLICAR_OFERTA = "publicar_oferta"
 }

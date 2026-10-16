@@ -376,6 +376,7 @@ private fun StockDetalle(stock: Int) {
         Text(
             text = when {
                 stock <= 0 -> "Sin stock disponible"
+                stock == 1 -> "Queda solo 1 unidad"
                 bajo -> "Quedan solo $stock unidades"
                 else -> "Quedan $stock unidades"
             },

@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import cl.duoc.costostock.ui.views.DetalleScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
+import cl.duoc.costostock.ui.views.PerfilScreen
 import cl.duoc.costostock.ui.views.PublicarOfertaScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
@@ -90,6 +91,9 @@ fun AppNavigation(navController: NavHostController) {
         }
         composable(Rutas.OFERTAS) {
             OfertasScreen(navController)
+        }
+        composable(Rutas.PERFIL) {
+            PerfilScreen(navController)
         }
         composable(Rutas.PUBLICAR_OFERTA) {
             PublicarOfertaScreen(navController)

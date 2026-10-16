@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.Perfil
+import cl.duoc.costostock.data.PreferenciasManager
 import cl.duoc.costostock.data.Ubicacion
 import cl.duoc.costostock.data.UbicacionManager
 import cl.duoc.costostock.data.room.OfertaEntity
@@ -44,6 +46,18 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
 
     private val ubicacionManager = UbicacionManager(application)
     private val repositorio = OfertaRepository(application)
+    private val preferencias = PreferenciasManager(application)
+
+    /**
+     * Perfil con el que se esta navegando. Decide si se muestra el boton
+     * de publicar: solo el proveedor puede cargar ofertas.
+     */
+    val perfilActivo: StateFlow<Perfil> =
+        preferencias.perfilActivo.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Perfil.COMPRADOR
+        )
 
     private val _estado = MutableStateFlow<EstadoUbicacion>(EstadoUbicacion.Cargando)
     val estado: StateFlow<EstadoUbicacion> = _estado

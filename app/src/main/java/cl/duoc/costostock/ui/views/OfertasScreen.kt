@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.data.Ubicacion
 import cl.duoc.costostock.ui.viewmodel.EstadoUbicacion
@@ -64,6 +67,9 @@ fun OfertasScreen(
     val ofertas by viewModel.ofertas.collectAsState()
     val categoria by viewModel.categoria.collectAsState()
     val ahora by viewModel.ahora.collectAsState()
+    val perfil by viewModel.perfilActivo.collectAsState()
+
+    val esProveedor = perfil == Perfil.PROVEEDOR
 
     Scaffold(
         topBar = {
@@ -72,18 +78,35 @@ fun OfertasScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                title = { Text("Costo Stock") }
+                title = {
+                    Text(
+                        if (esProveedor) "Mis publicaciones" else "Costo Stock"
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { navController.navigate(Rutas.PERFIL) }) {
+                        Icon(
+                            Icons.Filled.Person,
+                            contentDescription = "Mi perfil",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate(Rutas.PUBLICAR_OFERTA) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(Modifier.size(8.dp))
-                Text("Publicar")
+            // Publicar ofertas es una accion del proveedor: un comprador
+            // no deberia poder cargar productos
+            if (esProveedor) {
+                ExtendedFloatingActionButton(
+                    onClick = { navController.navigate(Rutas.PUBLICAR_OFERTA) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(Modifier.size(8.dp))
+                    Text("Publicar")
+                }
             }
         }
     ) { padding ->

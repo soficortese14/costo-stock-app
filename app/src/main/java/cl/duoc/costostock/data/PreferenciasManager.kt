@@ -23,6 +23,7 @@ class PreferenciasManager(private val context: Context) {
     // Las llaves con las que se guarda cada dato
     private val ONBOARDING_VISTO = booleanPreferencesKey("onboarding_visto")
     private val EMAIL_SESION = stringPreferencesKey("email_sesion")
+    private val PERFIL_ACTIVO = stringPreferencesKey("perfil_activo")
 
     // Lectura: si el usuario ya vio el onboarding
     val onboardingVisto: Flow<Boolean> =
@@ -35,6 +36,19 @@ class PreferenciasManager(private val context: Context) {
         context.dataStore.data.map { prefs ->
             prefs[EMAIL_SESION]
         }
+
+    // Lectura: el perfil con el que se esta navegando la app
+    val perfilActivo: Flow<Perfil> =
+        context.dataStore.data.map { prefs ->
+            Perfil.desdeNombre(prefs[PERFIL_ACTIVO])
+        }
+
+    // Escritura: cambiar de perfil
+    suspend fun cambiarPerfil(perfil: Perfil) {
+        context.dataStore.edit { prefs ->
+            prefs[PERFIL_ACTIVO] = perfil.name
+        }
+    }
 
     // Escritura: marcar que el onboarding ya se mostro
     suspend fun marcarOnboardingVisto() {
@@ -50,10 +64,11 @@ class PreferenciasManager(private val context: Context) {
         }
     }
 
-    // Escritura: borrar la sesion al cerrar sesion
+    // Escritura: borrar la sesion y volver al perfil de comprador
     suspend fun cerrarSesion() {
         context.dataStore.edit { prefs ->
             prefs.remove(EMAIL_SESION)
+            prefs[PERFIL_ACTIVO] = Perfil.COMPRADOR.name
         }
     }
 }
