@@ -35,6 +35,11 @@ class OfertaRepository(context: Context) {
         }
     }
 
+    /** Guarda una oferta nueva publicada desde el formulario. */
+    suspend fun publicar(oferta: OfertaEntity) {
+        dao.insertar(listOf(oferta))
+    }
+
     /** Descuenta stock al comprar. */
     suspend fun comprar(id: Long, cantidad: Int) {
         dao.descontarStock(id, cantidad)
