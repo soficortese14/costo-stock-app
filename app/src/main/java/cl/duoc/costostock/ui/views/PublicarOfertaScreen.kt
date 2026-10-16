@@ -36,6 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -43,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +72,17 @@ fun PublicarOfertaScreen(
     val formulario by viewModel.formulario.collectAsState()
     val guardando by viewModel.guardando.collectAsState()
     val publicada by viewModel.publicada.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
+
+    val snackbar = remember { SnackbarHostState() }
+
+    // Avisa de campos pendientes o producto duplicado
+    LaunchedEffect(mensaje) {
+        mensaje?.let {
+            snackbar.showSnackbar(it)
+            viewModel.limpiarMensaje()
+        }
+    }
 
     // Al guardar en Room, vuelve al catalogo: la oferta nueva aparece
     // sola porque el DAO devuelve un Flow
@@ -94,7 +108,8 @@ fun PublicarOfertaScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -146,7 +161,7 @@ fun PublicarOfertaScreen(
                 CampoTextoValidado(
                     valor = formulario.precioOriginal,
                     onValorCambia = viewModel::cambiarPrecioOriginal,
-                    etiqueta = "Precio original",
+                    etiqueta = "P. original",
                     error = formulario.errorPrecioOriginal,
                     iconoInicial = Icons.Filled.AttachMoney,
                     tipoTeclado = KeyboardType.Number,
@@ -155,7 +170,7 @@ fun PublicarOfertaScreen(
                 CampoTextoValidado(
                     valor = formulario.precioOferta,
                     onValorCambia = viewModel::cambiarPrecioOferta,
-                    etiqueta = "Precio oferta",
+                    etiqueta = "P. oferta",
                     error = formulario.errorPrecioOferta,
                     iconoInicial = Icons.Filled.AttachMoney,
                     tipoTeclado = KeyboardType.Number,
@@ -184,7 +199,7 @@ fun PublicarOfertaScreen(
                 CampoTextoValidado(
                     valor = formulario.stock,
                     onValorCambia = viewModel::cambiarStock,
-                    etiqueta = "Unidades",
+                    etiqueta = "Stock",
                     error = formulario.errorStock,
                     iconoInicial = Icons.Filled.Inventory2,
                     tipoTeclado = KeyboardType.Number,
@@ -193,11 +208,11 @@ fun PublicarOfertaScreen(
                 CampoTextoValidado(
                     valor = formulario.horasVigencia,
                     onValorCambia = viewModel::cambiarHoras,
-                    etiqueta = "Duracion (horas)",
+                    etiqueta = "Horas",
                     error = formulario.errorHoras,
                     iconoInicial = Icons.Filled.Schedule,
                     tipoTeclado = KeyboardType.Number,
-                    soporte = "Maximo 72 h",
+                    soporte = "Max 72",
                     modifier = Modifier.weight(1f)
                 )
             }

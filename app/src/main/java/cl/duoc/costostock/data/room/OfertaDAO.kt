@@ -26,6 +26,28 @@ interface OfertaDAO {
     @Query("SELECT * FROM ofertas WHERE id = :id")
     suspend fun obtenerPorId(id: Long): OfertaEntity?
 
+    /**
+     * Busca una oferta vigente con el mismo producto en el mismo comercio.
+     * Sirve para no publicar dos veces lo mismo por error.
+     *
+     * COLLATE NOCASE ignora mayusculas: "Pan integral" y "pan integral"
+     * se consideran el mismo producto.
+     */
+    @Query(
+        """
+        SELECT * FROM ofertas
+        WHERE titulo = :titulo COLLATE NOCASE
+          AND comercio = :comercio COLLATE NOCASE
+          AND finVigencia > :ahora
+        LIMIT 1
+        """
+    )
+    suspend fun buscarDuplicada(
+        titulo: String,
+        comercio: String,
+        ahora: Long
+    ): OfertaEntity?
+
     /** Sirve para saber si hay que cargar los datos de prueba. */
     @Query("SELECT COUNT(*) FROM ofertas")
     suspend fun contar(): Int

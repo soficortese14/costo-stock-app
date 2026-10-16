@@ -40,13 +40,18 @@ data class FormularioOferta(
     val errorDireccion: String? = null,
     val errorPeso: String? = null
 ) {
-    /** true cuando ningun campo tiene error. */
-    val esValido: Boolean
+    private val errores: List<String?>
         get() = listOf(
             errorTitulo, errorDescripcion, errorPrecioOriginal,
             errorPrecioOferta, errorStock, errorHoras,
             errorComercio, errorDireccion, errorPeso
-        ).all { it == null }
+        )
+
+    /** true cuando ningun campo tiene error. */
+    val esValido: Boolean get() = errores.all { it == null }
+
+    /** Cuantos campos quedan por corregir. */
+    val cantidadErrores: Int get() = errores.count { it != null }
 }
 
 /**
@@ -69,6 +74,18 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     /** Pasa a true cuando la oferta quedo guardada en Room. */
     private val _publicada = MutableStateFlow(false)
     val publicada: StateFlow<Boolean> = _publicada
+
+    /**
+     * Mensaje general del formulario, para lo que no corresponde a un
+     * campo en particular: campos pendientes o producto duplicado.
+     */
+    private val _mensaje = MutableStateFlow<String?>(null)
+    val mensaje: StateFlow<String?> = _mensaje
+
+    /** La pantalla la llama despues de mostrar el mensaje. */
+    fun limpiarMensaje() {
+        _mensaje.value = null
+    }
 
     // --- Cambios de cada campo. Validan a medida que se escribe ---
 
@@ -159,7 +176,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
 
     /** @param campo nombre con su articulo, para que concuerde el genero */
     private fun validarTexto(valor: String, campo: String, minimo: Int): String? = when {
-        valor.isBlank() -> "$campo es obligatorio"
+        valor.isBlank() -> "$campo es un campo obligatorio"
         valor.trim().length < minimo -> "$campo debe tener al menos $minimo caracteres"
         else -> null
     }
@@ -167,7 +184,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     private fun validarPrecio(valor: String, campo: String): String? {
         val numero = valor.toIntOrNull()
         return when {
-            valor.isBlank() -> "$campo es obligatorio"
+            valor.isBlank() -> "$campo es un campo obligatorio"
             numero == null -> "Ingresa solo numeros"
             numero <= 0 -> "$campo debe ser mayor a cero"
             numero > 9_999_999 -> "$campo es demasiado alto"
@@ -201,7 +218,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     ): String? {
         val numero = valor.toIntOrNull()
         return when {
-            valor.isBlank() -> "$campo es obligatorio"
+            valor.isBlank() -> "$campo es un campo obligatorio"
             numero == null -> "Ingresa solo numeros"
             numero < minimo -> "$campo debe ser al menos $minimo"
             numero > maximo -> "$campo no puede superar $maximo"
@@ -244,10 +261,30 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
         val validado = validarTodo()
         _formulario.value = validado
 
-        if (!validado.esValido) return
+        // Si hay errores, avisamos cuantos: los campos con problema
+        // pueden estar fuera de la pantalla y el usuario no los ve
+        if (!validado.esValido) {
+            val pendientes = validado.cantidadErrores
+            _mensaje.value =
+                if (pendientes == 1) "Falta corregir 1 campo"
+                else "Faltan corregir $pendientes campos"
+            return
+        }
 
         viewModelScope.launch {
             _guardando.value = true
+
+            // Regla de negocio: no publicar dos veces el mismo producto
+            // en el mismo comercio mientras la primera siga vigente
+            if (repositorio.existeDuplicada(validado.titulo, validado.comercio)) {
+                _guardando.value = false
+                _mensaje.value =
+                    "Ya tienes una oferta vigente de este producto en ese comercio"
+                _formulario.value = validado.copy(
+                    errorTitulo = "Este producto ya esta publicado"
+                )
+                return@launch
+            }
 
             val peso = validado.pesoKg.toDoubleOrNull() ?: 0.0
             val horas = validado.horasVigencia.toIntOrNull() ?: 4

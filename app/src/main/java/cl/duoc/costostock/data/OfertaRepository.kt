@@ -35,6 +35,17 @@ class OfertaRepository(context: Context) {
         }
     }
 
+    /**
+     * true si ya existe una oferta vigente con el mismo producto en el
+     * mismo comercio.
+     */
+    suspend fun existeDuplicada(titulo: String, comercio: String): Boolean =
+        dao.buscarDuplicada(
+            titulo.trim(),
+            comercio.trim(),
+            System.currentTimeMillis()
+        ) != null
+
     /** Guarda una oferta nueva publicada desde el formulario. */
     suspend fun publicar(oferta: OfertaEntity) {
         dao.insertar(listOf(oferta))
