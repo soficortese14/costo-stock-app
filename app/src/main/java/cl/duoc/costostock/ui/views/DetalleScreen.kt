@@ -559,12 +559,19 @@ private fun formatearKilosDetalle(kilos: Double): String =
 
 private fun formatearTiempoDetalle(milisegundos: Long): String {
     val totalSegundos = milisegundos / 1000
-    val horas = totalSegundos / 3600
+    val dias = totalSegundos / 86_400
+    val horas = (totalSegundos % 86_400) / 3600
     val minutos = (totalSegundos % 3600) / 60
     val segundos = totalSegundos % 60
 
-    return if (horas > 0)
-        String.format(Locale.US, "%02dh %02dm %02ds", horas, minutos, segundos)
-    else
-        String.format(Locale.US, "%02dm %02ds", minutos, segundos)
+    /*
+     * La unidad mas grande manda. Una oferta a varios dias mostraba antes
+     * "119h 53m 52s", que no se lee: a esa escala los segundos no aportan
+     * y lo que importa es si quedan dias u horas.
+     */
+    return when {
+        dias > 0 -> String.format(Locale.US, "%dd %02dh", dias, horas)
+        horas > 0 -> String.format(Locale.US, "%02dh %02dm %02ds", horas, minutos, segundos)
+        else -> String.format(Locale.US, "%02dm %02ds", minutos, segundos)
+    }
 }

@@ -19,8 +19,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +35,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,6 +44,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -66,10 +74,48 @@ fun OfertasScreen(
     val radioKm by viewModel.radioKm.collectAsState()
     val ofertas by viewModel.ofertas.collectAsState()
     val categoria by viewModel.categoria.collectAsState()
+    val busqueda by viewModel.busqueda.collectAsState()
+    val comuna by viewModel.comuna.collectAsState()
+    val comunas by viewModel.comunas.collectAsState()
     val ahora by viewModel.ahora.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
 
     val esProveedor = perfil == Perfil.PROVEEDOR
+
+    /*
+     * Restaurar el catalogo es destructivo: descarta las compras y las
+     * ofertas publicadas en esta sesion. Por eso se pregunta antes, para
+     * no perder una demostracion por un toque accidental.
+     */
+    var confirmarReinicio by remember { mutableStateOf(false) }
+
+    if (confirmarReinicio) {
+        AlertDialog(
+            onDismissRequest = { confirmarReinicio = false },
+            title = { Text("Restaurar catalogo") },
+            text = {
+                Text(
+                    "Las ofertas vuelven a quedar como al inicio. Se descartan " +
+                        "las compras y las publicaciones de esta sesion."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.reiniciarCatalogo()
+                        confirmarReinicio = false
+                    }
+                ) {
+                    Text("Restaurar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmarReinicio = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -84,6 +130,13 @@ fun OfertasScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = { confirmarReinicio = true }) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = "Restaurar catalogo",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                     IconButton(onClick = { navController.navigate(Rutas.PERFIL) }) {
                         Icon(
                             Icons.Filled.Person,
@@ -122,6 +175,14 @@ fun OfertasScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
+            CampoBusqueda(
+                texto = busqueda,
+                onCambiar = { viewModel.cambiarBusqueda(it) },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(Modifier.height(12.dp))
+
             FilaCategorias(
                 seleccionada = categoria,
                 onSeleccionar = { viewModel.cambiarCategoria(it) }
@@ -129,8 +190,16 @@ fun OfertasScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            FilaComunas(
+                comunas = comunas,
+                seleccionada = comuna,
+                onSeleccionar = { viewModel.cambiarComuna(it) }
+            )
+
+            Spacer(Modifier.height(8.dp))
+
             if (ofertas.isEmpty()) {
-                SinOfertas()
+                SinOfertas(busqueda)
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -152,6 +221,41 @@ fun OfertasScreen(
             }
         }
     }
+}
+
+/**
+ * Buscador por palabra clave.
+ *
+ * La pantalla solo reporta lo que se escribio: quien decide que ofertas
+ * calzan es el ViewModel. Asi la regla se puede probar sin la interfaz.
+ */
+@Composable
+private fun CampoBusqueda(
+    texto: String,
+    onCambiar: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = texto,
+        onValueChange = onCambiar,
+        modifier = modifier.fillMaxWidth(),
+        singleLine = true,
+        placeholder = { Text("Buscar producto o comercio") },
+        leadingIcon = {
+            Icon(Icons.Filled.Search, contentDescription = null)
+        },
+        trailingIcon = {
+            // La X solo aparece cuando hay algo que borrar.
+            if (texto.isNotEmpty()) {
+                IconButton(onClick = { onCambiar("") }) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Limpiar busqueda"
+                    )
+                }
+            }
+        }
+    )
 }
 
 /** Chips de categoria. El seleccionado se pinta con el verde principal. */
@@ -178,23 +282,71 @@ private fun FilaCategorias(
     }
 }
 
+/**
+ * Chips de comuna. La lista llega desde Room, no esta escrita a mano:
+ * el cliente definio cobertura en la V Region y las comunas dependen de
+ * donde haya ofertas publicadas.
+ *
+ * Se dibujan con el borde marcado en vez del relleno para que no compitan
+ * con los chips de categoria, que son el filtro principal.
+ */
 @Composable
-private fun SinOfertas() {
+private fun FilaComunas(
+    comunas: List<String>,
+    seleccionada: String,
+    onSeleccionar: (String) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(comunas) { comuna ->
+            FilterChip(
+                selected = comuna == seleccionada,
+                onClick = { onSeleccionar(comuna) },
+                label = { Text(comuna) },
+                leadingIcon = {
+                    if (comuna == seleccionada) {
+                        Icon(
+                            Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun SinOfertas(busqueda: String) {
+    val buscando = busqueda.isNotBlank()
+
+    // Ocupa solo el alto que necesita, no la pantalla completa: si se
+    // centrara verticalmente, el teclado abierto taparia el mensaje justo
+    // cuando el usuario esta escribiendo en el buscador.
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(32.dp),
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "No hay ofertas en esta categoria",
+            text = if (buscando) "Sin resultados para \"$busqueda\""
+            else "No hay ofertas en esta categoria",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Prueba con otra categoria o amplia el radio de busqueda.",
+            text = if (buscando) "Revisa como esta escrito o prueba con otra palabra."
+            else "Prueba con otra categoria o amplia el radio de busqueda.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

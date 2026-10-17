@@ -48,6 +48,15 @@ interface OfertaDAO {
         ahora: Long
     ): OfertaEntity?
 
+    /**
+     * Las comunas que realmente tienen ofertas, sin repetir.
+     *
+     * Se consultan a la tabla en vez de escribirlas a mano: si un proveedor
+     * publica en una comuna nueva, aparece sola en el filtro.
+     */
+    @Query("SELECT DISTINCT comuna FROM ofertas ORDER BY comuna ASC")
+    fun observarComunas(): Flow<List<String>>
+
     /** Sirve para saber si hay que cargar los datos de prueba. */
     @Query("SELECT COUNT(*) FROM ofertas")
     suspend fun contar(): Int

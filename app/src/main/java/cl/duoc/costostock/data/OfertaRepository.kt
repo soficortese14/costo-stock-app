@@ -25,6 +25,9 @@ class OfertaRepository(context: Context) {
 
     suspend fun obtenerPorId(id: Long): OfertaEntity? = dao.obtenerPorId(id)
 
+    /** Comunas con ofertas publicadas, para armar el filtro. */
+    fun observarComunas(): Flow<List<String>> = dao.observarComunas()
+
     /**
      * Carga el catalogo de prueba la primera vez que se abre la app.
      * Si la tabla ya tiene datos no hace nada, para no duplicarlos.
@@ -64,6 +67,7 @@ class OfertaRepository(context: Context) {
 
     companion object {
         const val CATEGORIA_TODAS = "Todas"
+        const val COMUNA_TODAS = "Todas"
 
         val CATEGORIAS = listOf(
             CATEGORIA_TODAS,

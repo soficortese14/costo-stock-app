@@ -10,8 +10,11 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import kotlin.coroutines.resume
 
@@ -52,13 +55,36 @@ class UbicacionManager(private val context: Context) {
     suspend fun obtenerUbicacion(): Ubicacion? {
         if (!hayPermiso()) return null
 
-        val posicion = posicionActual() ?: return null
+        // Ni el GPS ni el Geocoder garantizan una respuesta. Sin un tope de
+        // tiempo, la pantalla se queda en "Buscando tu ubicacion..." para
+        // siempre: es preferible rendirse y ofrecer el boton de reintentar.
+        val posicion = withTimeoutOrNull(TOPE_POSICION) { posicionActual() }
+            ?: return null
 
         return Ubicacion(
             latitud = posicion.first,
             longitud = posicion.second,
-            comuna = comunaDesdeCoordenadas(posicion.first, posicion.second)
+            // La comuna es opcional: si no se puede traducir, la pantalla
+            // muestra igual las coordenadas.
+            comuna = comunaConTope(posicion.first, posicion.second)
         )
+    }
+
+    /**
+     * Traduce coordenadas a comuna, rindiendose pasado el tope.
+     *
+     * El Geocoder consulta por red con una llamada bloqueante, que no se
+     * puede interrumpir desde afuera. Por eso se lanza como tarea aparte:
+     * al vencer el plazo se abandona y la app sigue andando.
+     */
+    private suspend fun comunaConTope(
+        latitud: Double,
+        longitud: Double
+    ): String? = coroutineScope {
+        val tarea = async { comunaDesdeCoordenadas(latitud, longitud) }
+
+        withTimeoutOrNull(TOPE_GEOCODER) { tarea.await() }
+            .also { if (it == null) tarea.cancel() }
     }
 
     /**
@@ -112,5 +138,13 @@ class UbicacionManager(private val context: Context) {
         } catch (e: Exception) {
             null
         }
+    }
+
+    private companion object {
+        /** Cuanto se espera al GPS antes de darlo por no disponible. */
+        const val TOPE_POSICION = 8_000L
+
+        /** Cuanto se espera al Geocoder antes de seguir sin la comuna. */
+        const val TOPE_GEOCODER = 3_000L
     }
 }
