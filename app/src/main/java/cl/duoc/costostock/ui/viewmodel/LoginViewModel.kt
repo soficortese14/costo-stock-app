@@ -1,11 +1,14 @@
 package cl.duoc.costostock.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import cl.duoc.costostock.data.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel(){
+class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
 
     //Tuberias para que el viewmodel solo trabaje los datos y el screen solo escuche (lectura)
     private val _correo = MutableStateFlow("")
@@ -19,6 +22,11 @@ class LoginViewModel : ViewModel(){
 
     private val _errorContrasena = MutableStateFlow("")
     val errorContrasena : StateFlow <String> = _errorContrasena.asStateFlow()
+
+    //Para cambia de ruta en caso true
+    private val _loginExitoso = MutableStateFlow(false)
+    val loginExitoso : StateFlow <Boolean> = _loginExitoso.asStateFlow()
+
 
 
 
@@ -62,8 +70,19 @@ class LoginViewModel : ViewModel(){
 
         if(hayErrores) return
 
+        viewModelScope.launch {
+            val loginExitoso = repository.validarLogin(correoIn, repository.hashearContrasena(contrasenaIn))
 
-        //éxito para conectar al backend y comprobar credenciales
+            if (loginExitoso){
+                _loginExitoso.value = true
+            }else{
+                _errorContrasena.value = "Credenciales incorrectas"
+            }
+        }
     }
 
+    fun cerrarSesion (){
+        _loginExitoso.value = false
+    }
 }
+

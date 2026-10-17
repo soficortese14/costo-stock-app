@@ -2,6 +2,7 @@ package cl.duoc.costostock.data
 
 import cl.duoc.costostock.data.room.UsuarioDAO
 import cl.duoc.costostock.data.room.UsuarioEntity
+import java.security.MessageDigest
 
 class UsuarioRepository(private val usuarioDao: UsuarioDAO){
 
@@ -21,5 +22,10 @@ class UsuarioRepository(private val usuarioDao: UsuarioDAO){
     suspend fun validarLogin(correo: String, contrasena: String): Boolean {
         val usuario = usuarioDao.verificarLogin(correo, contrasena)
         return usuario != null
+    }
+
+    fun hashearContrasena(contrasena: String): String {
+        val pwHasheada = MessageDigest.getInstance("SHA-256").digest(contrasena.toByteArray())
+        return pwHasheada.joinToString("") { "%02x".format(it) }
     }
 }
