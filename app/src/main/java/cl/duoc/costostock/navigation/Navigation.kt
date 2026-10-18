@@ -5,11 +5,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import cl.duoc.costostock.data.AppStateProveedor
+import cl.duoc.costostock.ui.ui.view.LoginProveedor
 import cl.duoc.costostock.ui.views.CarritoScreen
 import cl.duoc.costostock.ui.views.ConsultaPedidoScreen
 import cl.duoc.costostock.ui.views.DetalleScreen
@@ -36,8 +39,7 @@ private const val DURACION = 300
  * al usuario la sensacion de avanzar y de volver dentro de la app.
  */
 @Composable
-fun AppNavigation(navController: NavHostController) {
-
+fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateProveedor) {
     //navhost es el contenedor
     NavHost(
         navController = navController,
@@ -91,7 +93,7 @@ fun AppNavigation(navController: NavHostController) {
             RegistroScreen(navController = navController)
         }
         composable(Rutas.POSTULACION_PROVEEDOR) {
-            PantallaEnConstruccion("Postulacion de proveedor", "Integrante 4")
+            LoginProveedor(navController, appStateProveedor)
         }
         composable(Rutas.OFERTAS) {
             OfertasScreen(navController)
