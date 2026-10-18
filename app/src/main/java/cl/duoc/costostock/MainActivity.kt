@@ -16,21 +16,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Controlador que recuerda en que pantalla estamos
+        /*val navController = rememberNavController()
+
+        * Debido al AppState lo tuve que dejar comentado, lo hace MyApp Directamente
+         */
+        val data_base = AppDatabase.getInstance(applicationContext)
+        val appStateProveedor = AppStateProveedor(data_base)
+
+        appStateProveedor.cargarDatos()
 
         setContent {
             CostoStockTheme {
-                // Controlador que recuerda en que pantalla estamos
-                /*val navController = rememberNavController()
+                MyApp(appStateProveedor)
 
-                * Debido al AppState lo tuve que dejar comentado, lo hace MyApp Directamente
-                 */
-                val data_base = AppDatabase.getInstance(applicationContext)
-                val appStateProveedor = AppStateProveedor(data_base)
-
-                appStateProveedor.cargarDatos()
-                setContent {
-                    MyApp(appStateProveedor)
-                }
             }
         }
     }
