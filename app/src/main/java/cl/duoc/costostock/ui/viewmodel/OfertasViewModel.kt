@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -70,6 +71,26 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
     private val _categoria = MutableStateFlow(OfertaRepository.CATEGORIA_TODAS)
     val categoria: StateFlow<String> = _categoria
 
+    /** Texto escrito en el buscador. Vacio significa "sin filtro". */
+    private val _busqueda = MutableStateFlow("")
+    val busqueda: StateFlow<String> = _busqueda
+
+    private val _comuna = MutableStateFlow(OfertaRepository.COMUNA_TODAS)
+    val comuna: StateFlow<String> = _comuna
+
+    /**
+     * Comunas disponibles para filtrar. Salen de la tabla, asi que una
+     * comuna nueva aparece sola apenas se publica una oferta ahi.
+     */
+    val comunas: StateFlow<List<String>> =
+        repositorio.observarComunas()
+            .map { listOf(OfertaRepository.COMUNA_TODAS) + it }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = listOf(OfertaRepository.COMUNA_TODAS)
+            )
+
     /**
      * Marca de tiempo que avanza cada segundo.
      *
@@ -80,15 +101,28 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
     val ahora: StateFlow<Long> = _ahora
 
     /**
-     * El catalogo. Se arma combinando la categoria elegida con lo que
-     * emite Room: al cambiar el filtro o la tabla, la lista se recalcula sola.
+     * El catalogo. Se arma combinando la categoria elegida, el texto del
+     * buscador y lo que emite Room: al cambiar cualquiera de los tres, la
+     * lista se recalcula sola.
      */
     val ofertas: StateFlow<List<OfertaEntity>> =
-        _categoria
-            .combine(repositorio.observarOfertas()) { categoriaActual, todas ->
-                if (categoriaActual == OfertaRepository.CATEGORIA_TODAS) todas
-                else todas.filter { it.categoria == categoriaActual }
-            }
+        combine(
+            _categoria,
+            _busqueda,
+            _comuna,
+            repositorio.observarOfertas()
+        ) { categoriaActual, texto, comunaActual, todas ->
+            todas
+                .filter {
+                    categoriaActual == OfertaRepository.CATEGORIA_TODAS ||
+                        it.categoria == categoriaActual
+                }
+                .filter {
+                    comunaActual == OfertaRepository.COMUNA_TODAS ||
+                        it.comuna == comunaActual
+                }
+                .filter { coincideConBusqueda(it, texto) }
+        }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -140,6 +174,15 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
         _categoria.value = nueva
     }
 
+    /** Guarda lo que se escribio en el buscador. */
+    fun cambiarBusqueda(texto: String) {
+        _busqueda.value = texto
+    }
+
+    fun cambiarComuna(nueva: String) {
+        _comuna.value = nueva
+    }
+
     /** Cambia el radio de busqueda, entre 1 y 30 km. */
     fun cambiarRadio(km: Int) {
         _radioKm.value = km.coerceIn(1, 30)
@@ -158,4 +201,23 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
             repositorio.reiniciarCatalogo()
         }
     }
+}
+
+/**
+ * true si la oferta calza con lo que escribio el usuario.
+ *
+ * Se busca en el titulo, la descripcion y el comercio, ignorando
+ * mayusculas: escribir "pan" encuentra "Pan de molde integral".
+ * Con el campo vacio pasan todas las ofertas.
+ *
+ * Esta fuera del ViewModel a proposito: es una regla pura, sin estado,
+ * y asi se puede probar sin levantar la pantalla.
+ */
+private fun coincideConBusqueda(oferta: OfertaEntity, texto: String): Boolean {
+    val termino = texto.trim()
+    if (termino.isBlank()) return true
+
+    return oferta.titulo.contains(termino, ignoreCase = true) ||
+        oferta.descripcion.contains(termino, ignoreCase = true) ||
+        oferta.comercio.contains(termino, ignoreCase = true)
 }

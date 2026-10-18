@@ -5,6 +5,8 @@
     <!-- Recurso nativo: ubicacion, para mostrar las ofertas cercanas.
          Declararlos aqui es la primera mitad; la segunda es pedirlos en
          tiempo de ejecucion desde OnboardingScreen. -->
+    <!-- Necesario para que Coil descargue las fotos que publica un proveedor. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 

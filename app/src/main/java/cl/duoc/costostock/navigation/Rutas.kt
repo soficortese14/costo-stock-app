@@ -38,4 +38,16 @@ object Rutas {
 
     // Modulo proveedor (PR-03)
     const val PUBLICAR_OFERTA = "publicar_oferta"
+
+    /*
+     * Editar oferta (PR-04).
+     *
+     * Reusa la pantalla de publicar: lo unico que cambia es que llega un
+     * id. Son rutas distintas para que el boton atras funcione como se
+     * espera y para que la pantalla sepa en que modo esta.
+     */
+    const val EDITAR_OFERTA = "editar_oferta/{$ARG_OFERTA_ID}"
+
+    /** Arma la ruta concreta: editarOferta(3) devuelve "editar_oferta/3". */
+    fun editarOferta(ofertaId: Long): String = "editar_oferta/$ofertaId"
 }
