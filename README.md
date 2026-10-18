@@ -19,7 +19,7 @@ Aplicación móvil Android diseñada para la gestión de inventario y compra/ven
 
 
 ## 👥 Equipo de Desarrollo
-*   [Sofía Cortese] - Encargadx de X.
+*   [Sofía Cortese] - Acceso y Navegación.
 *   [Nombre 2] - Encargadx de X.
 *   [Nombre 3] - Encargadx de X.
 *   [Nombre 4] - Encargadx de X.
