@@ -3,6 +3,7 @@ package cl.duoc.costostock.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.costostock.data.CarritoRepository
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.data.PreferenciasManager
@@ -58,6 +59,7 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
     private val ubicacionManager = UbicacionManager(application)
     private val repositorio = OfertaRepository(application)
     private val preferencias = PreferenciasManager(application)
+    private val carrito = CarritoRepository(application)
 
     /**
      * Perfil con el que se esta navegando. Decide si se muestra el boton
@@ -68,6 +70,14 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = Perfil.COMPRADOR
+        )
+
+    /** Unidades en el carrito, para el globo del icono. */
+    val unidadesCarrito: StateFlow<Int> =
+        carrito.observarUnidades().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = 0
         )
 
     private val _estado = MutableStateFlow<EstadoUbicacion>(EstadoUbicacion.Cargando)

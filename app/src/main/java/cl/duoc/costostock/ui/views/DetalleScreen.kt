@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
@@ -34,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -147,6 +149,7 @@ fun DetalleScreen(
                 ahora = ahora,
                 comprando = comprando,
                 onComprar = { viewModel.comprar(actual.oferta) },
+                onAgregarCarrito = { viewModel.agregarAlCarrito(actual.oferta) },
                 modifier = Modifier.padding(padding)
             )
         }
@@ -197,6 +200,7 @@ private fun ContenidoDetalle(
     ahora: Long,
     comprando: Boolean,
     onComprar: () -> Unit,
+    onAgregarCarrito: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val vigente = oferta.estaVigente(ahora)
@@ -269,7 +273,8 @@ private fun ContenidoDetalle(
             vigente = vigente,
             sinStock = oferta.stockActual <= 0,
             comprando = comprando,
-            onComprar = onComprar
+            onComprar = onComprar,
+            onAgregarCarrito = onAgregarCarrito
         )
     }
 }
@@ -517,7 +522,8 @@ private fun BarraComprar(
     vigente: Boolean,
     sinStock: Boolean,
     comprando: Boolean,
-    onComprar: () -> Unit
+    onComprar: () -> Unit,
+    onAgregarCarrito: () -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -542,6 +548,23 @@ private fun BarraComprar(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            // Agregar al carrito va aparte de comprar: son dos
+            // intenciones distintas y el cliente definio que el comprador
+            // puede juntar varios excedentes de un mismo retiro.
+            OutlinedButton(
+                onClick = onAgregarCarrito,
+                enabled = !sinStock && !comprando,
+                modifier = Modifier.height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.AddShoppingCart,
+                    contentDescription = "Agregar al carrito",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(Modifier.size(8.dp))
 
             Button(
                 onClick = onComprar,

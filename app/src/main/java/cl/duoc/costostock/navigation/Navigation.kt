@@ -10,11 +10,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import cl.duoc.costostock.ui.views.CarritoScreen
+import cl.duoc.costostock.ui.views.ConsultaPedidoScreen
 import cl.duoc.costostock.ui.views.DetalleScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PerfilScreen
 import cl.duoc.costostock.ui.views.PublicarOfertaScreen
+import cl.duoc.costostock.ui.views.PagoScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
 
@@ -94,6 +97,28 @@ fun AppNavigation(navController: NavHostController) {
         }
         composable(Rutas.PERFIL) {
             PerfilScreen(navController)
+        }
+        composable(Rutas.CARRITO) {
+            CarritoScreen(navController)
+        }
+        composable(Rutas.PAGO) {
+            PagoScreen(navController)
+        }
+        // El codigo viaja como parametro opcional en la ruta.
+        composable(
+            route = Rutas.CONSULTA_PEDIDO,
+            arguments = listOf(
+                navArgument(Rutas.ARG_CODIGO) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entrada ->
+            ConsultaPedidoScreen(
+                navController = navController,
+                codigoInicial = entrada.arguments?.getString(Rutas.ARG_CODIGO)
+            )
         }
         composable(Rutas.PUBLICAR_OFERTA) {
             PublicarOfertaScreen(navController)
