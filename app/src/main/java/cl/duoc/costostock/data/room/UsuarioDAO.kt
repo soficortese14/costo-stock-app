@@ -12,6 +12,9 @@ interface UsuarioDAO{
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertarUsuario(usuario: UsuarioEntity) : Long
 
+    //Registrar usuario
+
+
     //Login verificar si existe con ese correo y pw
     @Query("SELECT * FROM usuarios WHERE correo = :correo AND contrasena = :contrasena LIMIT 1")
     suspend fun verificarLogin(correo: String, contrasena: String) : UsuarioEntity?

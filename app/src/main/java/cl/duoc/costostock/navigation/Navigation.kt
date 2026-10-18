@@ -5,11 +5,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import cl.duoc.costostock.data.UsuarioRepository
+import cl.duoc.costostock.data.room.AppDatabase
+import cl.duoc.costostock.ui.viewmodel.LoginViewModel
 import cl.duoc.costostock.ui.views.DetalleScreen
 import cl.duoc.costostock.ui.views.LoginScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
@@ -18,6 +24,7 @@ import cl.duoc.costostock.ui.views.PerfilScreen
 import cl.duoc.costostock.ui.views.PublicarOfertaScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
+import androidx.lifecycle.ViewModelProvider
 
 /** Duracion de las transiciones, en milisegundos. */
 private const val DURACION = 300
@@ -82,7 +89,27 @@ fun AppNavigation(navController: NavHostController) {
             OnboardingScreen(navController)
         }
         composable(Rutas.LOGIN) {
-            LoginScreen()
+            val context = LocalContext.current
+            val database = AppDatabase.getInstance(context)
+            val usuarioDao = database.usuarioDAO()
+            val repository = UsuarioRepository(usuarioDao)
+
+            val viewModel: LoginViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return LoginViewModel(repository) as T
+                    }
+                }
+            )
+
+            LoginScreen(
+                viewModel = viewModel,
+                _loginExitoso = {
+                    navController.navigate(Rutas.OFERTAS) {
+                        popUpTo(Rutas.LOGIN) { inclusive = true }
+                    }
+                }
+            )
         }
         composable(Rutas.REGISTRO) {
             PantallaEnConstruccion("Registro de comprador", "Integrante 3")

@@ -24,7 +24,7 @@ class UsuarioRepository(private val usuarioDao: UsuarioDAO){
         return usuario != null
     }
 
-    fun hashearContrasena(contrasena: String): String {
+    private fun hashearContrasena(contrasena: String): String {
         val pwHasheada = MessageDigest.getInstance("SHA-256").digest(contrasena.toByteArray())
         return pwHasheada.joinToString("") { "%02x".format(it) }
     }

@@ -28,7 +28,13 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
     val loginExitoso : StateFlow <Boolean> = _loginExitoso.asStateFlow()
 
 
-
+    init {
+        viewModelScope.launch {
+            val correoPrueba = "admin@duoc.cl"
+            val contrasenaPrueba = "Admin123"
+            repository.registrarUsuario(correoPrueba, contrasenaPrueba)
+        }
+    }
 
     fun actualizarCorreo (nuevoTexto: String){
         _correo.value = nuevoTexto
@@ -43,8 +49,8 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
 
     fun iniciarSesion (){
 
-        val correoIn = _correo.value
-        val contrasenaIn = _contrasena.value
+        val correoIn = _correo.value.trim()
+        val contrasenaIn = _contrasena.value.trim()
         //maneja la lógica
         var hayErrores = false
 
@@ -71,7 +77,7 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
         if(hayErrores) return
 
         viewModelScope.launch {
-            val loginExitoso = repository.validarLogin(correoIn, repository.hashearContrasena(contrasenaIn))
+            val loginExitoso = repository.validarLogin(correoIn, contrasenaIn)
 
             if (loginExitoso){
                 _loginExitoso.value = true
