@@ -2,11 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Recurso nativo: ubicacion, para mostrar las ofertas cercanas.
-         Declararlos aqui es la primera mitad; la segunda es pedirlos en
-         tiempo de ejecucion desde OnboardingScreen. -->
+    <!-- Recurso nativo: ubicacion, para mostrar las ofertas cercanas. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Recurso nativo: camara, para foto de perfil en el registro -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"

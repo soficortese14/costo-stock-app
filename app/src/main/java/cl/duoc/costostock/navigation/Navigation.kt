@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
+import cl.duoc.costostock.ui.views.RegistroScreen
 import cl.duoc.costostock.ui.views.SplashScreen
 
 /** Duracion de las transiciones, en milisegundos. */
@@ -79,7 +80,7 @@ fun AppNavigation(navController: NavHostController) {
             PantallaEnConstruccion("Login", "Integrante 2")
         }
         composable(Rutas.REGISTRO) {
-            PantallaEnConstruccion("Registro de comprador", "Integrante 3")
+            RegistroScreen(navController = navController)
         }
         composable(Rutas.POSTULACION_PROVEEDOR) {
             PantallaEnConstruccion("Postulacion de proveedor", "Integrante 4")

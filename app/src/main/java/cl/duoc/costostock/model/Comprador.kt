@@ -1,14 +1,15 @@
 package cl.duoc.costostock.model
 
+import android.graphics.Bitmap
+
 /**
- * Modelo de datos para representar a un Comprador registrado en la aplicación.
- *
- * @property email Correo electrónico del comprador.
- * @property password Contraseña de la cuenta.
- * @property numero Número de teléfono de contacto.
+ * Modelo de datos para representar a un Comprador registrado.
  */
 data class Comprador(
+    val nombre: String,
     val email: String,
+    val numero: String,
     val password: String,
-    val numero: String
+    val fotoPerfil: Bitmap? = null,
+    val aceptoTerminos: Boolean = true
 )
