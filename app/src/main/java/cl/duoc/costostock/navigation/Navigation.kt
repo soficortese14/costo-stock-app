@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import cl.duoc.costostock.data.PreferenciasManager
 
 import cl.duoc.costostock.data.UsuarioRepository
 import cl.duoc.costostock.data.room.AppDatabase
@@ -41,6 +42,7 @@ fun AppNavigation(navController: NavHostController) {
     val database = AppDatabase.getInstance(context)
     val usuarioDao = database.usuarioDAO()
     val repository = UsuarioRepository(usuarioDao)
+    val preferencias = PreferenciasManager(context)
 
     NavHost(
         navController = navController,
@@ -84,7 +86,7 @@ fun AppNavigation(navController: NavHostController) {
             val viewModel: LoginViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return LoginViewModel(repository) as T
+                        return LoginViewModel(repository, preferencias) as T
                     }
                 }
             )
