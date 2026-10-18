@@ -53,6 +53,8 @@ import java.util.Locale
 fun OfertaCard(
     oferta: OfertaEntity,
     ahora: Long,
+    /** Distancia hasta el punto de retiro, o null si no hay ubicacion. */
+    distanciaKm: Double? = null,
     onClick: () -> Unit = {}
 ) {
     val vigente = oferta.estaVigente(ahora)
@@ -91,7 +93,11 @@ fun OfertaCard(
                     )
                     Spacer(Modifier.size(4.dp))
                     Text(
-                        text = "${oferta.comercio} · ${oferta.comuna}",
+                        // La distancia solo aparece si hay ubicacion. Sin
+                        // ella no hay desde donde medir, y una tarjeta que
+                        // dijera "a 0 km" seria peor que no decir nada.
+                        text = "${oferta.comercio} · ${oferta.comuna}" +
+                            (distanciaKm?.let { " · ${formatearDistancia(it)}" } ?: ""),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -293,14 +299,29 @@ private fun formatearKilos(kilos: Double): String =
     String.format(Locale.US, "%.1f", kilos).replace('.', ',')
 
 /** Milisegundos -> "02h 15m 40s" */
+/**
+ * Distancia legible: bajo 1 km se muestra en metros, porque "0,4 km"
+ * se entiende peor que "400 m" cuando el punto de retiro esta al lado.
+ */
+private fun formatearDistancia(km: Double): String =
+    if (km < 1) "${(km * 1000).toInt()} m"
+    else String.format(Locale.US, "%.1f km", km).replace('.', ',')
+
 private fun formatearTiempo(milisegundos: Long): String {
     val totalSegundos = milisegundos / 1000
-    val horas = totalSegundos / 3600
+    val dias = totalSegundos / 86_400
+    val horas = (totalSegundos % 86_400) / 3600
     val minutos = (totalSegundos % 3600) / 60
     val segundos = totalSegundos % 60
 
-    return if (horas > 0)
-        String.format(Locale.US, "%02dh %02dm %02ds", horas, minutos, segundos)
-    else
-        String.format(Locale.US, "%02dm %02ds", minutos, segundos)
+    /*
+     * La unidad mas grande manda. Una oferta a varios dias mostraba antes
+     * "119h 53m 52s", que no se lee: a esa escala los segundos no aportan
+     * y lo que importa es si quedan dias u horas.
+     */
+    return when {
+        dias > 0 -> String.format(Locale.US, "%dd %02dh", dias, horas)
+        horas > 0 -> String.format(Locale.US, "%02dh %02dm %02ds", horas, minutos, segundos)
+        else -> String.format(Locale.US, "%02dm %02ds", minutos, segundos)
+    }
 }

@@ -10,9 +10,17 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.coroutines.resume
 
 /** Lo que devuelve una consulta de ubicacion. */
@@ -21,6 +29,37 @@ data class Ubicacion(
     val longitud: Double,
     val comuna: String?
 )
+
+/** Radio medio de la Tierra en kilometros. */
+private const val RADIO_TIERRA_KM = 6371.0
+
+/**
+ * Distancia en kilometros entre dos puntos, por la formula de Haversine.
+ *
+ * Mide sobre la superficie de la esfera y no en linea recta a traves de
+ * ella. A las distancias que le importan a la app, de 1 a 30 km dentro de
+ * la V Region, la diferencia con la distancia real por calle es chica y
+ * sirve de sobra para ordenar y filtrar.
+ *
+ * Esta fuera de UbicacionManager a proposito: no necesita contexto ni
+ * permisos, es solo aritmetica, y asi se puede probar sola.
+ */
+fun distanciaKm(
+    latitud1: Double,
+    longitud1: Double,
+    latitud2: Double,
+    longitud2: Double
+): Double {
+    val dLat = Math.toRadians(latitud2 - latitud1)
+    val dLon = Math.toRadians(longitud2 - longitud1)
+
+    val a = sin(dLat / 2).pow(2) +
+        cos(Math.toRadians(latitud1)) *
+        cos(Math.toRadians(latitud2)) *
+        sin(dLon / 2).pow(2)
+
+    return 2 * RADIO_TIERRA_KM * asin(sqrt(a))
+}
 
 /**
  * Obtiene la ubicacion del dispositivo.
@@ -52,26 +91,65 @@ class UbicacionManager(private val context: Context) {
     suspend fun obtenerUbicacion(): Ubicacion? {
         if (!hayPermiso()) return null
 
+        // Ni el GPS ni el Geocoder garantizan una respuesta. Sin un tope de
+        // tiempo, la pantalla se queda en "Buscando tu ubicacion..." para
+        // siempre: es preferible rendirse y ofrecer el boton de reintentar.
         val posicion = posicionActual() ?: return null
 
         return Ubicacion(
             latitud = posicion.first,
             longitud = posicion.second,
-            comuna = comunaDesdeCoordenadas(posicion.first, posicion.second)
+            // La comuna es opcional: si no se puede traducir, la pantalla
+            // muestra igual las coordenadas.
+            comuna = comunaConTope(posicion.first, posicion.second)
         )
     }
 
     /**
-     * Envuelve la llamada de Google Play Services, que trabaja con callbacks,
-     * dentro de una funcion suspend para poder usarla con corrutinas.
+     * Traduce coordenadas a comuna, rindiendose pasado el tope.
+     *
+     * El Geocoder consulta por red con una llamada bloqueante, que no se
+     * puede interrumpir desde afuera. Por eso se lanza como tarea aparte:
+     * al vencer el plazo se abandona y la app sigue andando.
+     */
+    private suspend fun comunaConTope(
+        latitud: Double,
+        longitud: Double
+    ): String? = coroutineScope {
+        val tarea = async { comunaDesdeCoordenadas(latitud, longitud) }
+
+        withTimeoutOrNull(TOPE_GEOCODER) { tarea.await() }
+            .also { if (it == null) tarea.cancel() }
+    }
+
+    /**
+     * Pide la posicion, con un respaldo.
+     *
+     * Primero intenta una lectura nueva. Si no llega ninguna, se usa la
+     * ultima posicion conocida: vale mas una posicion de hace un rato que
+     * no mostrar nada, porque las ofertas se filtran por kilometros y no
+     * por metros.
      */
     private suspend fun posicionActual(): Pair<Double, Double>? =
+        withTimeoutOrNull(TOPE_LECTURA) { lecturaNueva() }
+            ?: withTimeoutOrNull(TOPE_ULTIMA) { ultimaConocida() }
+
+    /**
+     * Envuelve la llamada de Google Play Services, que trabaja con callbacks,
+     * dentro de una funcion suspend para poder usarla con corrutinas.
+     *
+     * Se pide ALTA PRECISION a proposito: la precision balanceada se apoya
+     * en la ubicacion por red o wifi, que puede estar deshabilitada. Con
+     * alta precision se usa el GPS, que es el recurso nativo que la app
+     * declara en el manifiesto.
+     */
+    private suspend fun lecturaNueva(): Pair<Double, Double>? =
         suspendCancellableCoroutine { continuacion ->
             try {
                 val cancelacion = CancellationTokenSource()
 
                 cliente.getCurrentLocation(
-                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                    Priority.PRIORITY_HIGH_ACCURACY,
                     cancelacion.token
                 ).addOnSuccessListener { ubicacion ->
                     continuacion.resume(
@@ -85,6 +163,22 @@ class UbicacionManager(private val context: Context) {
                 continuacion.invokeOnCancellation { cancelacion.cancel() }
             } catch (e: SecurityException) {
                 // El permiso se revoco entre el chequeo y la llamada
+                continuacion.resume(null)
+            }
+        }
+
+    /** Ultima posicion que el sistema alcanzo a guardar. Puede no haber. */
+    private suspend fun ultimaConocida(): Pair<Double, Double>? =
+        suspendCancellableCoroutine { continuacion ->
+            try {
+                cliente.lastLocation
+                    .addOnSuccessListener { ubicacion ->
+                        continuacion.resume(
+                            ubicacion?.let { it.latitude to it.longitude }
+                        )
+                    }
+                    .addOnFailureListener { continuacion.resume(null) }
+            } catch (e: SecurityException) {
                 continuacion.resume(null)
             }
         }
@@ -112,5 +206,22 @@ class UbicacionManager(private val context: Context) {
         } catch (e: Exception) {
             null
         }
+    }
+
+    private companion object {
+        /**
+         * Cuanto se espera una lectura nueva del GPS.
+         *
+         * Cada intento lleva su propio plazo: con un solo tope global, la
+         * lectura nueva se consumia todo el tiempo y la ultima posicion
+         * conocida no alcanzaba a usarse nunca.
+         */
+        const val TOPE_LECTURA = 5_000L
+
+        /** Cuanto se espera la ultima posicion guardada por el sistema. */
+        const val TOPE_ULTIMA = 2_000L
+
+        /** Cuanto se espera al Geocoder antes de seguir sin la comuna. */
+        const val TOPE_GEOCODER = 3_000L
     }
 }

@@ -3,6 +3,7 @@ package cl.duoc.costostock.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.costostock.data.AlmacenImagenes
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,9 @@ data class FormularioOferta(
     val direccion: String = "",
     val comuna: String = "Vina del Mar",
     val pesoKg: String = "",
+
+    /** Ruta de la foto ya copiada a la app. Vacio significa sin foto. */
+    val imagenUrl: String = "",
 
     // null = campo correcto
     val errorTitulo: String? = null,
@@ -76,6 +80,18 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     val publicada: StateFlow<Boolean> = _publicada
 
     /**
+     * Id de la oferta que se esta editando, o null si se esta publicando
+     * una nueva. Es lo unico que distingue los dos modos: el formulario,
+     * las validaciones y la pantalla son exactamente los mismos.
+     */
+    private val _editandoId = MutableStateFlow<Long?>(null)
+    val editandoId: StateFlow<Long?> = _editandoId
+
+    /** Se marca cuando se borro la oferta, para que la pantalla salga. */
+    private val _eliminada = MutableStateFlow(false)
+    val eliminada: StateFlow<Boolean> = _eliminada
+
+    /**
      * Mensaje general del formulario, para lo que no corresponde a un
      * campo en particular: campos pendientes o producto duplicado.
      */
@@ -83,6 +99,11 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     val mensaje: StateFlow<String?> = _mensaje
 
     /** La pantalla la llama despues de mostrar el mensaje. */
+    /** Deja un aviso para que la pantalla lo muestre en el snackbar. */
+    fun avisar(texto: String) {
+        _mensaje.value = texto
+    }
+
     fun limpiarMensaje() {
         _mensaje.value = null
     }
@@ -162,6 +183,30 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
             direccion = valor,
             errorDireccion = validarTexto(valor, "La direccion", minimo = 5)
         )
+    }
+
+    /**
+     * Guarda la foto recien tomada o elegida.
+     *
+     * Si ya habia una, se borra: el usuario la reemplazo y dejarla
+     * ocuparia espacio sin que nadie pueda volver a verla.
+     */
+    fun cambiarImagen(nuevaRuta: String) {
+        val anterior = _formulario.value.imagenUrl
+
+        if (anterior.isNotBlank() && anterior != nuevaRuta) {
+            AlmacenImagenes.borrar(anterior)
+        }
+
+        _formulario.value = _formulario.value.copy(imagenUrl = nuevaRuta)
+    }
+
+    /** Quita la foto de la oferta. */
+    fun quitarImagen() {
+        val actual = _formulario.value.imagenUrl
+        if (actual.isNotBlank()) AlmacenImagenes.borrar(actual)
+
+        _formulario.value = _formulario.value.copy(imagenUrl = "")
     }
 
     fun cambiarPeso(valor: String) {
@@ -256,6 +301,68 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
         )
     }
 
+    /**
+     * Trae una oferta de Room y la vuelca en el formulario.
+     *
+     * El camino de vuelta no es simetrico: la entidad guarda el CO2 ya
+     * calculado y el instante en que termina, mientras que el formulario
+     * pide el peso y las horas que faltan. Las dos se reconstruyen.
+     */
+    fun cargarParaEditar(ofertaId: Long) {
+        // Si ya esta cargada, no se pisa lo que el usuario alcanzo a escribir
+        if (_editandoId.value == ofertaId) return
+
+        viewModelScope.launch {
+            val oferta = repositorio.obtenerPorId(ofertaId) ?: return@launch
+
+            _editandoId.value = ofertaId
+            _formulario.value = FormularioOferta(
+                titulo = oferta.titulo,
+                descripcion = oferta.descripcion,
+                categoria = oferta.categoria,
+                precioOriginal = oferta.precioOriginal.toString(),
+                precioOferta = oferta.precioOferta.toString(),
+                stock = oferta.stockActual.toString(),
+                horasVigencia = horasRestantes(oferta.finVigencia).toString(),
+                comercio = oferta.comercio,
+                direccion = oferta.direccion,
+                comuna = oferta.comuna,
+                pesoKg = pesoDesdeCo2(oferta.categoria, oferta.co2Evitado),
+                imagenUrl = oferta.imagenUrl
+            )
+        }
+    }
+
+    /**
+     * Horas que le quedan a la oferta, con minimo 1.
+     *
+     * Una oferta ya expirada que se edita vuelve a quedar vigente: se
+     * entiende que el proveedor la esta reactivando.
+     */
+    private fun horasRestantes(finVigencia: Long): Int {
+        val restante = finVigencia - System.currentTimeMillis()
+        return (restante / 3_600_000L).toInt().coerceAtLeast(1)
+    }
+
+    /** Despeja el peso a partir del CO2 guardado y el factor de la categoria. */
+    private fun pesoDesdeCo2(categoria: String, co2: Double): String {
+        val factor = FACTORES_CO2[categoria] ?: 1.0
+        val peso = co2 / factor
+        return ((peso * 10).toInt() / 10.0).toString()
+    }
+
+    /** Borra la oferta que se esta editando. */
+    fun eliminar() {
+        val id = _editandoId.value ?: return
+
+        viewModelScope.launch {
+            _guardando.value = true
+            repositorio.eliminar(id)
+            _guardando.value = false
+            _eliminada.value = true
+        }
+    }
+
     /** Guarda la oferta en Room si el formulario es valido. */
     fun publicar() {
         val validado = validarTodo()
@@ -274,9 +381,18 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
         viewModelScope.launch {
             _guardando.value = true
 
+            val id = _editandoId.value
+
             // Regla de negocio: no publicar dos veces el mismo producto
-            // en el mismo comercio mientras la primera siga vigente
-            if (repositorio.existeDuplicada(validado.titulo, validado.comercio)) {
+            // en el mismo comercio mientras la primera siga vigente.
+            // Al editar se excluye la propia oferta de la comparacion.
+            val duplicada = repositorio.existeDuplicada(
+                titulo = validado.titulo,
+                comercio = validado.comercio,
+                excluirId = id ?: OfertaRepository.SIN_EXCLUIR
+            )
+
+            if (duplicada) {
                 _guardando.value = false
                 _mensaje.value =
                     "Ya tienes una oferta vigente de este producto en ese comercio"
@@ -291,6 +407,9 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
             val coordenadas = COORDENADAS[validado.comuna] ?: (-33.0245 to -71.5518)
 
             val oferta = OfertaEntity(
+                // Con id 0, Room genera uno nuevo. Con el id de una oferta
+                // existente, actualizar() reemplaza esa misma fila.
+                id = id ?: 0L,
                 titulo = validado.titulo.trim(),
                 descripcion = validado.descripcion.trim(),
                 categoria = validado.categoria,
@@ -304,10 +423,11 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
                 latitud = coordenadas.first,
                 longitud = coordenadas.second,
                 co2Evitado = calcularCo2(validado.categoria, peso),
-                imagenUrl = ""
+                imagenUrl = validado.imagenUrl
             )
 
-            repositorio.publicar(oferta)
+            if (id == null) repositorio.publicar(oferta)
+            else repositorio.actualizar(oferta)
 
             _guardando.value = false
             _publicada.value = true

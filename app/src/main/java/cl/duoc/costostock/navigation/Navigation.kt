@@ -5,26 +5,21 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import cl.duoc.costostock.data.UsuarioRepository
-import cl.duoc.costostock.data.room.AppDatabase
-import cl.duoc.costostock.ui.viewmodel.LoginViewModel
+import cl.duoc.costostock.ui.views.CarritoScreen
+import cl.duoc.costostock.ui.views.ConsultaPedidoScreen
 import cl.duoc.costostock.ui.views.DetalleScreen
-import cl.duoc.costostock.ui.views.LoginScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PerfilScreen
 import cl.duoc.costostock.ui.views.PublicarOfertaScreen
+import cl.duoc.costostock.ui.views.PagoScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
-import androidx.lifecycle.ViewModelProvider
 
 /** Duracion de las transiciones, en milisegundos. */
 private const val DURACION = 300
@@ -89,27 +84,7 @@ fun AppNavigation(navController: NavHostController) {
             OnboardingScreen(navController)
         }
         composable(Rutas.LOGIN) {
-            val context = LocalContext.current
-            val database = AppDatabase.getInstance(context)
-            val usuarioDao = database.usuarioDAO()
-            val repository = UsuarioRepository(usuarioDao)
-
-            val viewModel: LoginViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return LoginViewModel(repository) as T
-                    }
-                }
-            )
-
-            LoginScreen(
-                viewModel = viewModel,
-                _loginExitoso = {
-                    navController.navigate(Rutas.OFERTAS) {
-                        popUpTo(Rutas.LOGIN) { inclusive = true }
-                    }
-                }
-            )
+            PantallaEnConstruccion("Login", "Integrante 2")
         }
         composable(Rutas.REGISTRO) {
             PantallaEnConstruccion("Registro de comprador", "Integrante 3")
@@ -123,8 +98,40 @@ fun AppNavigation(navController: NavHostController) {
         composable(Rutas.PERFIL) {
             PerfilScreen(navController)
         }
+        composable(Rutas.CARRITO) {
+            CarritoScreen(navController)
+        }
+        composable(Rutas.PAGO) {
+            PagoScreen(navController)
+        }
+        // El codigo viaja como parametro opcional en la ruta.
+        composable(
+            route = Rutas.CONSULTA_PEDIDO,
+            arguments = listOf(
+                navArgument(Rutas.ARG_CODIGO) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entrada ->
+            ConsultaPedidoScreen(
+                navController = navController,
+                codigoInicial = entrada.arguments?.getString(Rutas.ARG_CODIGO)
+            )
+        }
         composable(Rutas.PUBLICAR_OFERTA) {
             PublicarOfertaScreen(navController)
+        }
+        // Editar reusa la misma pantalla: la diferencia es el id que llega.
+        composable(
+            route = Rutas.EDITAR_OFERTA,
+            arguments = listOf(
+                navArgument(Rutas.ARG_OFERTA_ID) { type = NavType.LongType }
+            )
+        ) { entrada ->
+            val ofertaId = entrada.arguments?.getLong(Rutas.ARG_OFERTA_ID) ?: 0L
+            PublicarOfertaScreen(navController = navController, ofertaId = ofertaId)
         }
         // El detalle recibe el id de la oferta dentro de la ruta.
         // navArgument declara el tipo, para que llegue como Long y no texto.

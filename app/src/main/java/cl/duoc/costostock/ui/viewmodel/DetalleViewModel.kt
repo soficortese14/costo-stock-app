@@ -3,11 +3,16 @@ package cl.duoc.costostock.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.costostock.data.CarritoRepository
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.Perfil
+import cl.duoc.costostock.data.PreferenciasManager
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -30,6 +35,19 @@ sealed class EstadoDetalle {
 class DetalleViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repositorio = OfertaRepository(application)
+    private val preferencias = PreferenciasManager(application)
+    private val carrito = CarritoRepository(application)
+
+    /**
+     * Perfil con el que se navega. Decide si se ofrece editar la oferta:
+     * un comprador no puede modificar lo que publico otro.
+     */
+    val perfilActivo: StateFlow<Perfil> =
+        preferencias.perfilActivo.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Perfil.COMPRADOR
+        )
 
     private val _estado = MutableStateFlow<EstadoDetalle>(EstadoDetalle.Cargando)
     val estado: StateFlow<EstadoDetalle> = _estado
@@ -93,6 +111,27 @@ class DetalleViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /** La pantalla llama a esto despues de mostrar el mensaje. */
+    /**
+     * Agrega una unidad al carrito, sin pasarse del stock.
+     *
+     * Agregar no descuenta stock: eso recien ocurre cuando la pasarela
+     * aprueba el pago. Hasta entonces el producto sigue disponible para
+     * los demas, que es como funciona cualquier tienda.
+     */
+    fun agregarAlCarrito(oferta: OfertaEntity) {
+        viewModelScope.launch {
+            val agregado = carrito.agregar(
+                ofertaId = oferta.id,
+                cantidad = 1,
+                stockDisponible = oferta.stockActual
+            )
+
+            _mensaje.value =
+                if (agregado) "Agregado al carrito"
+                else "Ya tienes todo el stock disponible en el carrito"
+        }
+    }
+
     fun limpiarMensaje() {
         _mensaje.value = null
     }
