@@ -8,6 +8,7 @@ import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.data.PreferenciasManager
 import cl.duoc.costostock.data.Ubicacion
 import cl.duoc.costostock.data.UbicacionManager
+import cl.duoc.costostock.data.distanciaKm
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,15 @@ sealed class EstadoUbicacion {
     /** Hay permiso, pero el dispositivo no entrego una posicion. */
     object NoDisponible : EstadoUbicacion()
 }
+
+/**
+ * Criterio con el que se ordena el catalogo.
+ *
+ * VIGENCIA pone primero lo que esta por vencer, que es el gancho del
+ * negocio. CERCANIA pone primero lo que el usuario puede ir a buscar
+ * caminando, que importa porque Costo Stock no tiene delivery.
+ */
+enum class OrdenCatalogo { VIGENCIA, CERCANIA }
 
 /**
  * Pantalla de ofertas: resuelve la ubicacion del usuario y entrega
@@ -78,6 +88,9 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
     private val _comuna = MutableStateFlow(OfertaRepository.COMUNA_TODAS)
     val comuna: StateFlow<String> = _comuna
 
+    private val _orden = MutableStateFlow(OrdenCatalogo.VIGENCIA)
+    val orden: StateFlow<OrdenCatalogo> = _orden
+
     /**
      * Comunas disponibles para filtrar. Salen de la tabla, asi que una
      * comuna nueva aparece sola apenas se publica una oferta ahi.
@@ -105,23 +118,41 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
      * buscador y lo que emite Room: al cambiar cualquiera de los tres, la
      * lista se recalcula sola.
      */
+    /**
+     * Los cuatro filtros viajan juntos.
+     *
+     * combine con tipos llega hasta cinco flujos y aca hacen falta seis
+     * (los cuatro filtros, la ubicacion y la tabla). Agruparlos primero
+     * evita tener que anidar combines.
+     */
+    private val filtros = combine(
+        _categoria,
+        _busqueda,
+        _comuna,
+        _radioKm
+    ) { categoria, texto, comuna, radio ->
+        Filtros(categoria, texto, comuna, radio)
+    }
+
     val ofertas: StateFlow<List<OfertaEntity>> =
         combine(
-            _categoria,
-            _busqueda,
-            _comuna,
+            filtros,
+            _estado,
+            _orden,
             repositorio.observarOfertas()
-        ) { categoriaActual, texto, comunaActual, todas ->
+        ) { f, estadoUbicacion, ordenActual, todas ->
             todas
                 .filter {
-                    categoriaActual == OfertaRepository.CATEGORIA_TODAS ||
-                        it.categoria == categoriaActual
+                    f.categoria == OfertaRepository.CATEGORIA_TODAS ||
+                        it.categoria == f.categoria
                 }
                 .filter {
-                    comunaActual == OfertaRepository.COMUNA_TODAS ||
-                        it.comuna == comunaActual
+                    f.comuna == OfertaRepository.COMUNA_TODAS ||
+                        it.comuna == f.comuna
                 }
-                .filter { coincideConBusqueda(it, texto) }
+                .filter { coincideConBusqueda(it, f.texto) }
+                .filter { dentroDelRadio(it, estadoUbicacion, f.radioKm) }
+                .let { ordenar(it, ordenActual, estadoUbicacion) }
         }
             .stateIn(
                 scope = viewModelScope,
@@ -183,6 +214,10 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
         _comuna.value = nueva
     }
 
+    fun cambiarOrden(nuevo: OrdenCatalogo) {
+        _orden.value = nuevo
+    }
+
     /** Cambia el radio de busqueda, entre 1 y 30 km. */
     fun cambiarRadio(km: Int) {
         _radioKm.value = km.coerceIn(1, 30)
@@ -221,3 +256,58 @@ private fun coincideConBusqueda(oferta: OfertaEntity, texto: String): Boolean {
         oferta.descripcion.contains(termino, ignoreCase = true) ||
         oferta.comercio.contains(termino, ignoreCase = true)
 }
+
+/** Los filtros del catalogo, agrupados para poder combinarlos de una vez. */
+private data class Filtros(
+    val categoria: String,
+    val texto: String,
+    val comuna: String,
+    val radioKm: Int
+)
+
+/**
+ * true si la oferta esta dentro del radio elegido.
+ *
+ * Sin ubicacion no se puede medir nada, asi que pasan todas: el cliente
+ * definio cobertura en la V Region y es preferible mostrar el catalogo
+ * completo antes que una pantalla vacia por no tener GPS.
+ */
+private fun dentroDelRadio(
+    oferta: OfertaEntity,
+    estado: EstadoUbicacion,
+    radioKm: Int
+): Boolean {
+    if (estado !is EstadoUbicacion.Disponible) return true
+
+    val distancia = distanciaKm(
+        estado.ubicacion.latitud,
+        estado.ubicacion.longitud,
+        oferta.latitud,
+        oferta.longitud
+    )
+    return distancia <= radioKm
+}
+
+/**
+ * Ordena el catalogo segun el criterio elegido.
+ *
+ * Si se pide cercania pero no hay ubicacion, no hay desde donde medir,
+ * asi que se cae a vigencia en vez de dejar la lista en cualquier orden.
+ */
+private fun ordenar(
+    ofertas: List<OfertaEntity>,
+    orden: OrdenCatalogo,
+    estado: EstadoUbicacion
+): List<OfertaEntity> =
+    if (orden == OrdenCatalogo.CERCANIA && estado is EstadoUbicacion.Disponible) {
+        ofertas.sortedBy {
+            distanciaKm(
+                estado.ubicacion.latitud,
+                estado.ubicacion.longitud,
+                it.latitud,
+                it.longitud
+            )
+        }
+    } else {
+        ofertas.sortedBy { it.finVigencia }
+    }

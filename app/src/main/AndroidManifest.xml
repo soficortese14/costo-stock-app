@@ -10,6 +10,17 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <!-- Segundo recurso nativo: la camara, para fotografiar el excedente. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        Hay equipos sin camara. Se declara no obligatoria para que la app
+        siga siendo instalable en ellos: la foto es opcional al publicar.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -31,6 +42,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Desde Android 7 no se puede entregar un file:// a otra app.
+            FileProvider crea un content:// temporal para que la camara
+            escriba la foto en nuestra carpeta sin exponer el resto.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 
 </manifest>

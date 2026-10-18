@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -37,12 +38,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,8 +60,10 @@ import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.data.Ubicacion
+import cl.duoc.costostock.data.distanciaKm
 import cl.duoc.costostock.ui.viewmodel.EstadoUbicacion
 import cl.duoc.costostock.ui.viewmodel.OfertasViewModel
+import cl.duoc.costostock.ui.viewmodel.OrdenCatalogo
 
 /**
  * CO-01 Ofertas. Muestra la ubicacion obtenida por GPS y el catalogo
@@ -79,6 +84,21 @@ fun OfertasScreen(
     val comunas by viewModel.comunas.collectAsState()
     val ahora by viewModel.ahora.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
+    val orden by viewModel.orden.collectAsState()
+
+    // Solo hay distancia que mostrar si se conoce donde esta el usuario.
+    val ubicacion = (estado as? EstadoUbicacion.Disponible)?.ubicacion
+
+    /*
+     * Al cambiar el criterio de orden la lista se reordena entera, pero
+     * la posicion del scroll se mantiene: el usuario quedaria mirando la
+     * mitad de una lista nueva sin saber que paso. Se vuelve al inicio.
+     */
+    val estadoLista = rememberLazyListState()
+
+    LaunchedEffect(orden) {
+        estadoLista.animateScrollToItem(0)
+    }
 
     val esProveedor = perfil == Perfil.PROVEEDOR
 
@@ -171,6 +191,7 @@ fun OfertasScreen(
             TarjetaUbicacion(
                 estado = estado,
                 radioKm = radioKm,
+                onCambiarRadio = { viewModel.cambiarRadio(it) },
                 onReintentar = { viewModel.cargarUbicacion() },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
@@ -196,12 +217,21 @@ fun OfertasScreen(
                 onSeleccionar = { viewModel.cambiarComuna(it) }
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
+
+            FilaOrden(
+                seleccionado = orden,
+                hayUbicacion = ubicacion != null,
+                onSeleccionar = { viewModel.cambiarOrden(it) }
+            )
+
+            Spacer(Modifier.height(4.dp))
 
             if (ofertas.isEmpty()) {
                 SinOfertas(busqueda)
             } else {
                 LazyColumn(
+                    state = estadoLista,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -212,6 +242,14 @@ fun OfertasScreen(
                         OfertaCard(
                             oferta = oferta,
                             ahora = ahora,
+                            distanciaKm = ubicacion?.let {
+                                distanciaKm(
+                                    it.latitud,
+                                    it.longitud,
+                                    oferta.latitud,
+                                    oferta.longitud
+                                )
+                            },
                             onClick = {
                                 navController.navigate(Rutas.detalle(oferta.id))
                             }
@@ -324,6 +362,55 @@ private fun FilaComunas(
     }
 }
 
+/**
+ * Criterio de orden del catalogo.
+ *
+ * Por defecto manda la vigencia, que es el gancho del negocio: lo que
+ * esta por vencer primero. Ordenar por cercania solo tiene sentido si se
+ * sabe donde esta el usuario, asi que sin ubicacion la opcion se ve pero
+ * queda desactivada, en vez de desaparecer sin explicacion.
+ */
+@Composable
+private fun FilaOrden(
+    seleccionado: OrdenCatalogo,
+    hayUbicacion: Boolean,
+    onSeleccionar: (OrdenCatalogo) -> Unit
+) {
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "Ordenar:",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        FilterChip(
+            selected = seleccionado == OrdenCatalogo.VIGENCIA,
+            onClick = { onSeleccionar(OrdenCatalogo.VIGENCIA) },
+            label = { Text("Termina antes") }
+        )
+
+        FilterChip(
+            selected = seleccionado == OrdenCatalogo.CERCANIA,
+            onClick = { onSeleccionar(OrdenCatalogo.CERCANIA) },
+            enabled = hayUbicacion,
+            label = { Text("Mas cerca") },
+            leadingIcon = {
+                if (seleccionado == OrdenCatalogo.CERCANIA) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        )
+    }
+}
+
 @Composable
 private fun SinOfertas(busqueda: String) {
     val buscando = busqueda.isNotBlank()
@@ -362,6 +449,7 @@ private fun SinOfertas(busqueda: String) {
 private fun TarjetaUbicacion(
     estado: EstadoUbicacion,
     radioKm: Int,
+    onCambiarRadio: (Int) -> Unit,
     onReintentar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -391,7 +479,11 @@ private fun TarjetaUbicacion(
                     is EstadoUbicacion.Cargando -> ContenidoCargando()
 
                     is EstadoUbicacion.Disponible ->
-                        ContenidoDisponible(estado.ubicacion, radioKm)
+                        ContenidoDisponible(
+                            ubicacion = estado.ubicacion,
+                            radioKm = radioKm,
+                            onCambiarRadio = onCambiarRadio
+                        )
 
                     is EstadoUbicacion.SinPermiso ->
                         ContenidoSinUbicacion(
@@ -435,7 +527,11 @@ private fun ContenidoCargando() {
  * puede leer sin que ocupe toda la tarjeta.
  */
 @Composable
-private fun ContenidoDisponible(ubicacion: Ubicacion, radioKm: Int) {
+private fun ContenidoDisponible(
+    ubicacion: Ubicacion,
+    radioKm: Int,
+    onCambiarRadio: (Int) -> Unit
+) {
     // AnimatedVisibility hace que la ubicacion aparezca con un fundido
     // en vez de reemplazar de golpe el indicador de carga
     AnimatedVisibility(
@@ -455,6 +551,18 @@ private fun ContenidoDisponible(ubicacion: Ubicacion, radioKm: Int) {
                     "${"%.4f".format(ubicacion.longitud)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            /*
+             * El cliente definio un radio de 1 a 30 km, con 15 por defecto.
+             * Son 29 pasos para que el deslizador se detenga en kilometros
+             * enteros y no en valores como 17,4 km.
+             */
+            Slider(
+                value = radioKm.toFloat(),
+                onValueChange = { onCambiarRadio(it.toInt()) },
+                valueRange = 1f..30f,
+                steps = 28
             )
         }
     }
