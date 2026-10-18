@@ -27,15 +27,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import cl.duoc.costostock.data.AppState
-import cl.duoc.costostock.utils.validarRUT
-import cl.duoc.costostock.utils.validarTelefono
+import cl.duoc.costostock.data.AppStateProveedor
+import cl.duoc.costostock.utilsproveedor.validarRUT
+import cl.duoc.costostock.utilsproveedor.validarTelefono
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroProveedor(
     navController: NavController,
-    appState: AppState){
+    appStateProveedor: AppStateProveedor){
     var rut by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmarPassword by remember { mutableStateOf("") }
@@ -146,7 +146,7 @@ fun RegistroProveedor(
                             error = "El teléfono debe tener 9 dígitos y partir con 9"
                         password != confirmarPassword ->
                             error = "Las contraseñas no coinciden"
-                        !appState.registrarProveedor(rut.trim(), password, razonSocial,giro,comuna,telefono) ->
+                        !appStateProveedor.registrarProveedor(rut.trim(), password, razonSocial,giro,comuna,telefono) ->
                             error = "El usuario ya existe"
                         //Si pasa sin errores, entonces va a llegar al else.
                         else -> {

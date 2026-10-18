@@ -16,7 +16,7 @@ data class Proveedor(
     val comuna: String,
     val telefono: String)
 
-class AppState( private val db: AppDatabase) {
+class AppStateProveedor(private val db: AppDatabase) {
     val proveedor = mutableStateListOf<Proveedor>()
     var proveedorActual: Proveedor? = null
         private set

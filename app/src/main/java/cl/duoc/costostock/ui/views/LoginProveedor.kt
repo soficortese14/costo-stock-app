@@ -1,16 +1,13 @@
 package cl.duoc.costostock.ui.ui.view
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -26,19 +23,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import cl.duoc.costostock.data.AppState
-import cl.duoc.costostock.utils.validarRUT
+import cl.duoc.costostock.data.AppStateProveedor
+import cl.duoc.costostock.utilsproveedor.validarRUT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginProveedor(
     navController: NavController,
-    appState: AppState
+    appStateProveedor: AppStateProveedor
 ){
     var rut by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -92,7 +88,7 @@ fun LoginProveedor(
                             error = "El formato de RUT NO es válido."
                         } else if (password.length < 3) {
                             error = "La contraseña debe tener al menos 3 caracteres."
-                        } else if (appState.login(rut, password)) {
+                        } else if (appStateProveedor.login(rut, password)) {
                             error = ""
                             Toast.makeText(context,"Registro Exitoso", Toast.LENGTH_SHORT).show()
                             // TO DO: La navegación debe colocarlo en la página, imagino algo como:

@@ -17,8 +17,6 @@ object Rutas {
     const val REGISTRO = "registro"
     const val POSTULACION_PROVEEDOR = "postulacion_proveedor"
 
-    const val REGISTRO_PROVEEDOR = "registro_proveedor"
-
 
     // Módulo comprador (CO-01)
     const val OFERTAS = "ofertas"
@@ -38,6 +36,42 @@ object Rutas {
 
     const val PERFIL = "perfil"
 
+    /*
+     * Carrito y pago (CO-09 y CO-11).
+     *
+     * El pago es pantalla aparte y no un dialogo dentro del carrito: es
+     * un paso con sus propios estados, y asi el boton atras se comporta
+     * como el usuario espera.
+     */
+    const val CARRITO = "carrito"
+    const val PAGO = "pago"
+
+    /*
+     * Consulta de pedido (CO-12).
+     *
+     * El codigo es opcional: si se llega desde el pago viene puesto y la
+     * busqueda arranca sola; si se entra desde el perfil, se escribe.
+     */
+    const val ARG_CODIGO = "codigo"
+    const val CONSULTA_PEDIDO = "consulta_pedido?$ARG_CODIGO={$ARG_CODIGO}"
+
+    /** consultaPedido("CS-1-A") devuelve la ruta con el codigo puesto. */
+    fun consultaPedido(codigo: String? = null): String =
+        if (codigo.isNullOrBlank()) "consulta_pedido"
+        else "consulta_pedido?codigo=$codigo"
+
     // Modulo proveedor (PR-03)
     const val PUBLICAR_OFERTA = "publicar_oferta"
+
+    /*
+     * Editar oferta (PR-04).
+     *
+     * Reusa la pantalla de publicar: lo unico que cambia es que llega un
+     * id. Son rutas distintas para que el boton atras funcione como se
+     * espera y para que la pantalla sepa en que modo esta.
+     */
+    const val EDITAR_OFERTA = "editar_oferta/{$ARG_OFERTA_ID}"
+
+    /** Arma la ruta concreta: editarOferta(3) devuelve "editar_oferta/3". */
+    fun editarOferta(ofertaId: Long): String = "editar_oferta/$ofertaId"
 }

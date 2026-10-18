@@ -5,19 +5,22 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import cl.duoc.costostock.data.AppState
+import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.ui.ui.view.LoginProveedor
-import cl.duoc.costostock.ui.ui.view.RegistroProveedor
+import cl.duoc.costostock.ui.views.CarritoScreen
+import cl.duoc.costostock.ui.views.ConsultaPedidoScreen
 import cl.duoc.costostock.ui.views.DetalleScreen
 import cl.duoc.costostock.ui.views.OfertasScreen
 import cl.duoc.costostock.ui.views.OnboardingScreen
 import cl.duoc.costostock.ui.views.PerfilScreen
 import cl.duoc.costostock.ui.views.PublicarOfertaScreen
+import cl.duoc.costostock.ui.views.PagoScreen
 import cl.duoc.costostock.ui.views.PantallaEnConstruccion
 import cl.duoc.costostock.ui.views.SplashScreen
 
@@ -35,8 +38,7 @@ private const val DURACION = 300
  * al usuario la sensacion de avanzar y de volver dentro de la app.
  */
 @Composable
-fun AppNavigation(navController: NavHostController, appState: AppState) {
-
+fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateProveedor) {
     //navhost es el contenedor
     NavHost(
         navController = navController,
@@ -90,10 +92,7 @@ fun AppNavigation(navController: NavHostController, appState: AppState) {
             PantallaEnConstruccion("Registro de comprador", "Integrante 3")
         }
         composable(Rutas.POSTULACION_PROVEEDOR) {
-            LoginProveedor(navController, appState)
-        }
-        composable(Rutas.REGISTRO_PROVEEDOR) {
-            RegistroProveedor(navController,appState)
+            LoginProveedor(navController, appStateProveedor)
         }
         composable(Rutas.OFERTAS) {
             OfertasScreen(navController)
@@ -101,8 +100,40 @@ fun AppNavigation(navController: NavHostController, appState: AppState) {
         composable(Rutas.PERFIL) {
             PerfilScreen(navController)
         }
+        composable(Rutas.CARRITO) {
+            CarritoScreen(navController)
+        }
+        composable(Rutas.PAGO) {
+            PagoScreen(navController)
+        }
+        // El codigo viaja como parametro opcional en la ruta.
+        composable(
+            route = Rutas.CONSULTA_PEDIDO,
+            arguments = listOf(
+                navArgument(Rutas.ARG_CODIGO) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entrada ->
+            ConsultaPedidoScreen(
+                navController = navController,
+                codigoInicial = entrada.arguments?.getString(Rutas.ARG_CODIGO)
+            )
+        }
         composable(Rutas.PUBLICAR_OFERTA) {
             PublicarOfertaScreen(navController)
+        }
+        // Editar reusa la misma pantalla: la diferencia es el id que llega.
+        composable(
+            route = Rutas.EDITAR_OFERTA,
+            arguments = listOf(
+                navArgument(Rutas.ARG_OFERTA_ID) { type = NavType.LongType }
+            )
+        ) { entrada ->
+            val ofertaId = entrada.arguments?.getLong(Rutas.ARG_OFERTA_ID) ?: 0L
+            PublicarOfertaScreen(navController = navController, ofertaId = ofertaId)
         }
         // El detalle recibe el id de la oferta dentro de la ruta.
         // navArgument declara el tipo, para que llegue como Long y no texto.

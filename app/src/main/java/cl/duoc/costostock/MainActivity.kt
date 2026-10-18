@@ -7,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
-import cl.duoc.costostock.data.AppState
+import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.data.room.AppDatabase
 import cl.duoc.costostock.navigation.AppNavigation
 import cl.duoc.costostock.ui.theme.CostoStockTheme
@@ -20,23 +20,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             CostoStockTheme {
                 // Controlador que recuerda en que pantalla estamos
-                val navController = rememberNavController()
-                val data_base = AppDatabase.getInstance(applicationContext)
-                val appState = AppState(data_base)
+                /*val navController = rememberNavController()
 
-                appState.cargarDatos()
+                * Debido al AppState lo tuve que dejar comentado, lo hace MyApp Directamente
+                 */
+                val data_base = AppDatabase.getInstance(applicationContext)
+                val appStateProveedor = AppStateProveedor(data_base)
+
+                appStateProveedor.cargarDatos()
                 setContent {
-                    MyApp(appState)
+                    MyApp(appStateProveedor)
                 }
             }
         }
     }
 
     @Composable
-    fun MyApp(appState: AppState){
+    fun MyApp(appStateProveedor: AppStateProveedor){
         val navController = rememberNavController()
         MaterialTheme() {
-            AppNavigation(navController,appState)
+            AppNavigation(navController,appStateProveedor)
         }
     }
 }

@@ -1,4 +1,4 @@
-package cl.duoc.costostock.utils
+package cl.duoc.costostock.utilsproveedor
 
 private val REGEX_RUT = Regex("^\\d{7,8}[\\dK]$")
 
