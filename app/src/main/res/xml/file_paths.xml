@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rutas que FileProvider puede compartir con otras aplicaciones.
+    Solo se expone la carpeta de fotos de ofertas, nada mas del almacenamiento.
+-->
+<paths>
+    <files-path
+        name="imagenes_ofertas"
+        path="imagenes_ofertas/" />
+</paths>

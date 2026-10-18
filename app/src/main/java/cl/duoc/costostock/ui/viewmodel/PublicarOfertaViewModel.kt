@@ -3,6 +3,7 @@ package cl.duoc.costostock.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.costostock.data.AlmacenImagenes
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,9 @@ data class FormularioOferta(
     val direccion: String = "",
     val comuna: String = "Vina del Mar",
     val pesoKg: String = "",
+
+    /** Ruta de la foto ya copiada a la app. Vacio significa sin foto. */
+    val imagenUrl: String = "",
 
     // null = campo correcto
     val errorTitulo: String? = null,
@@ -95,6 +99,11 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     val mensaje: StateFlow<String?> = _mensaje
 
     /** La pantalla la llama despues de mostrar el mensaje. */
+    /** Deja un aviso para que la pantalla lo muestre en el snackbar. */
+    fun avisar(texto: String) {
+        _mensaje.value = texto
+    }
+
     fun limpiarMensaje() {
         _mensaje.value = null
     }
@@ -174,6 +183,30 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
             direccion = valor,
             errorDireccion = validarTexto(valor, "La direccion", minimo = 5)
         )
+    }
+
+    /**
+     * Guarda la foto recien tomada o elegida.
+     *
+     * Si ya habia una, se borra: el usuario la reemplazo y dejarla
+     * ocuparia espacio sin que nadie pueda volver a verla.
+     */
+    fun cambiarImagen(nuevaRuta: String) {
+        val anterior = _formulario.value.imagenUrl
+
+        if (anterior.isNotBlank() && anterior != nuevaRuta) {
+            AlmacenImagenes.borrar(anterior)
+        }
+
+        _formulario.value = _formulario.value.copy(imagenUrl = nuevaRuta)
+    }
+
+    /** Quita la foto de la oferta. */
+    fun quitarImagen() {
+        val actual = _formulario.value.imagenUrl
+        if (actual.isNotBlank()) AlmacenImagenes.borrar(actual)
+
+        _formulario.value = _formulario.value.copy(imagenUrl = "")
     }
 
     fun cambiarPeso(valor: String) {
@@ -294,7 +327,8 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
                 comercio = oferta.comercio,
                 direccion = oferta.direccion,
                 comuna = oferta.comuna,
-                pesoKg = pesoDesdeCo2(oferta.categoria, oferta.co2Evitado)
+                pesoKg = pesoDesdeCo2(oferta.categoria, oferta.co2Evitado),
+                imagenUrl = oferta.imagenUrl
             )
         }
     }
@@ -389,7 +423,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
                 latitud = coordenadas.first,
                 longitud = coordenadas.second,
                 co2Evitado = calcularCo2(validado.categoria, peso),
-                imagenUrl = ""
+                imagenUrl = validado.imagenUrl
             )
 
             if (id == null) repositorio.publicar(oferta)
