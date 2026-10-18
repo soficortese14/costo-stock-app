@@ -7,7 +7,9 @@ import cl.duoc.costostock.data.CarritoRepository
 import cl.duoc.costostock.data.DatosTarjeta
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.PasarelaPago
+import cl.duoc.costostock.data.PedidoRepository
 import cl.duoc.costostock.data.ResultadoPago
+import cl.duoc.costostock.data.room.PedidoEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -54,6 +56,7 @@ class PagoViewModel(application: Application) : AndroidViewModel(application) {
 
     private val carrito = CarritoRepository(application)
     private val ofertas = OfertaRepository(application)
+    private val pedidos = PedidoRepository(application)
 
     private val _tarjeta = MutableStateFlow(DatosTarjeta())
     val tarjeta: StateFlow<DatosTarjeta> = _tarjeta
@@ -149,7 +152,7 @@ class PagoViewModel(application: Application) : AndroidViewModel(application) {
 
             when (val resultado = PasarelaPago.procesar(t, _monto.value)) {
                 is ResultadoPago.Aprobado -> {
-                    confirmarCompra()
+                    confirmarCompra(resultado)
                     _estado.value = EstadoPago.Aprobado(resultado)
                 }
 
@@ -166,8 +169,27 @@ class PagoViewModel(application: Application) : AndroidViewModel(application) {
      * Solo corre si la pasarela aprobo: si se descontara antes, un pago
      * rechazado dejaria productos reservados que nadie compro.
      */
-    private suspend fun confirmarCompra() {
+    private suspend fun confirmarCompra(aprobado: ResultadoPago.Aprobado) {
         val items = carrito.observarItems().first()
+        val ahora = System.currentTimeMillis()
+
+        /*
+         * El pedido se guarda ANTES de vaciar el carrito y con los datos
+         * ya resueltos a texto: a partir de aqui es un registro historico
+         * y no debe cambiar aunque el proveedor edite o borre la oferta.
+         */
+        pedidos.guardar(
+            PedidoEntity(
+                codigo = aprobado.codigoOrden,
+                fechaPago = ahora,
+                total = aprobado.monto,
+                unidades = items.sumOf { it.cantidad },
+                co2Evitado = items.sumOf { it.co2() },
+                ultimosCuatro = aprobado.ultimosCuatro,
+                detalle = PedidoRepository.detalleDe(items, ahora),
+                puntosRetiro = PedidoRepository.puntosRetiroDe(items)
+            )
+        )
 
         items.forEach { item ->
             ofertas.comprar(item.oferta.id, item.cantidad)

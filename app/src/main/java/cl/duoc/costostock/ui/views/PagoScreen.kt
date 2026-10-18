@@ -110,6 +110,11 @@ fun PagoScreen(
                     resultado = actual.resultado,
                     onVolver = {
                         navController.popBackStack(Rutas.OFERTAS, inclusive = false)
+                    },
+                    onConsultar = {
+                        navController.navigate(
+                            Rutas.consultaPedido(actual.resultado.codigoOrden)
+                        )
                     }
                 )
 
@@ -300,7 +305,11 @@ private fun Procesando(monto: Int) {
 }
 
 @Composable
-private fun Aprobado(resultado: ResultadoPago.Aprobado, onVolver: () -> Unit) {
+private fun Aprobado(
+    resultado: ResultadoPago.Aprobado,
+    onVolver: () -> Unit,
+    onConsultar: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -366,12 +375,23 @@ private fun Aprobado(resultado: ResultadoPago.Aprobado, onVolver: () -> Unit) {
         Spacer(Modifier.height(28.dp))
 
         Button(
+            onClick = onConsultar,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Text("Seguir mi pedido", fontWeight = FontWeight.SemiBold)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedButton(
             onClick = onVolver,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
-            Text("Volver al catalogo", fontWeight = FontWeight.SemiBold)
+            Text("Volver al catalogo")
         }
     }
 }

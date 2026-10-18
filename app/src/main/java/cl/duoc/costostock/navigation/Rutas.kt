@@ -46,6 +46,20 @@ object Rutas {
     const val CARRITO = "carrito"
     const val PAGO = "pago"
 
+    /*
+     * Consulta de pedido (CO-12).
+     *
+     * El codigo es opcional: si se llega desde el pago viene puesto y la
+     * busqueda arranca sola; si se entra desde el perfil, se escribe.
+     */
+    const val ARG_CODIGO = "codigo"
+    const val CONSULTA_PEDIDO = "consulta_pedido?$ARG_CODIGO={$ARG_CODIGO}"
+
+    /** consultaPedido("CS-1-A") devuelve la ruta con el codigo puesto. */
+    fun consultaPedido(codigo: String? = null): String =
+        if (codigo.isNullOrBlank()) "consulta_pedido"
+        else "consulta_pedido?codigo=$codigo"
+
     // Modulo proveedor (PR-03)
     const val PUBLICAR_OFERTA = "publicar_oferta"
 

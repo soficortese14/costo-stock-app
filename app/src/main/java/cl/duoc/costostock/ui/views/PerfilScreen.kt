@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -153,6 +154,28 @@ fun PerfilScreen(
             )
 
             Spacer(Modifier.height(28.dp))
+
+            /*
+             * Consultar un pedido no necesita sesion: el codigo de retiro
+             * es la credencial. Va antes del login a proposito, porque es
+             * lo que mas busca alguien que acaba de comprar.
+             */
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.consultaPedido()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.ConfirmationNumber,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Consultar un pedido", fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(12.dp))
 
             if (email.isNullOrBlank()) {
                 Button(
