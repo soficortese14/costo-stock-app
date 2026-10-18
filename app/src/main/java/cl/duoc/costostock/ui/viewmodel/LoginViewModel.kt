@@ -28,14 +28,6 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
     val loginExitoso : StateFlow <Boolean> = _loginExitoso.asStateFlow()
 
 
-    init {
-        viewModelScope.launch {
-            val correoPrueba = "admin@duoc.cl"
-            val contrasenaPrueba = "Admin123"
-            repository.registrarUsuario(correoPrueba, contrasenaPrueba)
-        }
-    }
-
     fun actualizarCorreo (nuevoTexto: String){
         _correo.value = nuevoTexto
         _errorCorreo.value = ""
@@ -58,11 +50,11 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
         if (correoIn.isBlank() || contrasenaIn.isBlank()){
             if (correoIn.isBlank()) _errorCorreo.value = "El correo no puede estar vacío"
             if (contrasenaIn.isBlank()) _errorContrasena.value = "La contraseña no puede estar vacía"
-            return //Parar aquí no tiene sentido comprobar formato si están vacíos los campos
+            return //Parar aquí no tiene sentido comprobar formato
         }
 
         //Regexxxxxx
-        val correoRegex = "^[A-Za-z0-9-+._]+@[A-Za-z0-9.-]+$".toRegex()
+        val correoRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$".toRegex()
         if (!correoRegex.matches(correoIn)){
             _errorCorreo.value = "El correo no es válido!"
             hayErrores = true
@@ -87,7 +79,7 @@ class LoginViewModel(private val repository: UsuarioRepository) : ViewModel(){
         }
     }
 
-    fun cerrarSesion (){
+    fun resetearSesion (){
         _loginExitoso.value = false
     }
 }

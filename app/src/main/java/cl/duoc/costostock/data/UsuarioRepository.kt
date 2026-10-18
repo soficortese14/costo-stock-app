@@ -12,7 +12,7 @@ class UsuarioRepository(private val usuarioDao: UsuarioDAO){
             return false // El correo existe, rechazamos el registro
         }
 
-        val nuevoUsuario = UsuarioEntity(correo = correo, contrasena = contrasena)
+        val nuevoUsuario = UsuarioEntity(correo = correo, contrasena = hashearContrasena(contrasena))
         val idGenerado = usuarioDao.insertarUsuario(nuevoUsuario)
 
         //Mayor que 0 éxito, -1 error
@@ -20,7 +20,7 @@ class UsuarioRepository(private val usuarioDao: UsuarioDAO){
     }
 
     suspend fun validarLogin(correo: String, contrasena: String): Boolean {
-        val usuario = usuarioDao.verificarLogin(correo, contrasena)
+        val usuario = usuarioDao.verificarLogin(correo, hashearContrasena(contrasena))
         return usuario != null
     }
 

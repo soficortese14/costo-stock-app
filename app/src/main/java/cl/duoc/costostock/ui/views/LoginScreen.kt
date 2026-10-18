@@ -2,7 +2,9 @@ package cl.duoc.costostock.ui.views
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
@@ -10,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,12 +20,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import cl.duoc.costostock.ui.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    _loginExitoso: () -> Unit
+    _loginExitoso: () -> Unit,
+    onNavegarRegistro : () -> Unit
 ) {
 
     val correo by viewModel.correo.collectAsState()
@@ -35,7 +40,7 @@ fun LoginScreen(
     LaunchedEffect(loginExitoso) {
         if (loginExitoso) {
             _loginExitoso()
-            viewModel.cerrarSesion()
+            viewModel.resetearSesion()
         }
     }
 
@@ -92,6 +97,12 @@ fun LoginScreen(
             onClick = { viewModel.iniciarSesion() }
         ) {
             Text("Iniciar sesión")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        TextButton(onClick = { onNavegarRegistro() }) {
+            Text("¿No tienes una cuenta? Regístrate")
         }
     }
 }
