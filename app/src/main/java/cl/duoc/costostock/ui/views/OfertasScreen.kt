@@ -37,6 +37,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -171,6 +172,7 @@ fun OfertasScreen(
             TarjetaUbicacion(
                 estado = estado,
                 radioKm = radioKm,
+                onCambiarRadio = { viewModel.cambiarRadio(it) },
                 onReintentar = { viewModel.cargarUbicacion() },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
@@ -362,6 +364,7 @@ private fun SinOfertas(busqueda: String) {
 private fun TarjetaUbicacion(
     estado: EstadoUbicacion,
     radioKm: Int,
+    onCambiarRadio: (Int) -> Unit,
     onReintentar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -391,7 +394,11 @@ private fun TarjetaUbicacion(
                     is EstadoUbicacion.Cargando -> ContenidoCargando()
 
                     is EstadoUbicacion.Disponible ->
-                        ContenidoDisponible(estado.ubicacion, radioKm)
+                        ContenidoDisponible(
+                            ubicacion = estado.ubicacion,
+                            radioKm = radioKm,
+                            onCambiarRadio = onCambiarRadio
+                        )
 
                     is EstadoUbicacion.SinPermiso ->
                         ContenidoSinUbicacion(
@@ -435,7 +442,11 @@ private fun ContenidoCargando() {
  * puede leer sin que ocupe toda la tarjeta.
  */
 @Composable
-private fun ContenidoDisponible(ubicacion: Ubicacion, radioKm: Int) {
+private fun ContenidoDisponible(
+    ubicacion: Ubicacion,
+    radioKm: Int,
+    onCambiarRadio: (Int) -> Unit
+) {
     // AnimatedVisibility hace que la ubicacion aparezca con un fundido
     // en vez de reemplazar de golpe el indicador de carga
     AnimatedVisibility(
@@ -455,6 +466,18 @@ private fun ContenidoDisponible(ubicacion: Ubicacion, radioKm: Int) {
                     "${"%.4f".format(ubicacion.longitud)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            /*
+             * El cliente definio un radio de 1 a 30 km, con 15 por defecto.
+             * Son 29 pasos para que el deslizador se detenga en kilometros
+             * enteros y no en valores como 17,4 km.
+             */
+            Slider(
+                value = radioKm.toFloat(),
+                onValueChange = { onCambiarRadio(it.toInt()) },
+                valueRange = 1f..30f,
+                steps = 28
             )
         }
     }

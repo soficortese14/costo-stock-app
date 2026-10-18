@@ -16,6 +16,11 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.coroutines.resume
 
 /** Lo que devuelve una consulta de ubicacion. */
@@ -24,6 +29,37 @@ data class Ubicacion(
     val longitud: Double,
     val comuna: String?
 )
+
+/** Radio medio de la Tierra en kilometros. */
+private const val RADIO_TIERRA_KM = 6371.0
+
+/**
+ * Distancia en kilometros entre dos puntos, por la formula de Haversine.
+ *
+ * Mide sobre la superficie de la esfera y no en linea recta a traves de
+ * ella. A las distancias que le importan a la app, de 1 a 30 km dentro de
+ * la V Region, la diferencia con la distancia real por calle es chica y
+ * sirve de sobra para ordenar y filtrar.
+ *
+ * Esta fuera de UbicacionManager a proposito: no necesita contexto ni
+ * permisos, es solo aritmetica, y asi se puede probar sola.
+ */
+fun distanciaKm(
+    latitud1: Double,
+    longitud1: Double,
+    latitud2: Double,
+    longitud2: Double
+): Double {
+    val dLat = Math.toRadians(latitud2 - latitud1)
+    val dLon = Math.toRadians(longitud2 - longitud1)
+
+    val a = sin(dLat / 2).pow(2) +
+        cos(Math.toRadians(latitud1)) *
+        cos(Math.toRadians(latitud2)) *
+        sin(dLon / 2).pow(2)
+
+    return 2 * RADIO_TIERRA_KM * asin(sqrt(a))
+}
 
 /**
  * Obtiene la ubicacion del dispositivo.
