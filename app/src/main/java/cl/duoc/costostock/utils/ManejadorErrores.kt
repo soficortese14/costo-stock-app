@@ -1,8 +1,5 @@
 package cl.duoc.costostock.utils
 
-/**
- * Estructura de datos que almacena los errores de validación de cada campo.
- */
 data class ErroresFormulario(
     val errorNombre: String? = null,
     val errorEmail: String? = null,
@@ -24,21 +21,8 @@ data class ErroresFormulario(
                 errorTerminos == null &&
                 errorGeneral == null
 }
-
-/**
- * Gestor independiente para la validación y manejo de errores del registro.
- *
- * Aplica los requisitos mínimos:
- * 1. Campos obligatorios.
- * 2. Mínimo 4 caracteres.
- * 3. Correo con '@' y '.com'.
- * 4. Aceptar la casilla de términos y condiciones.
- */
 object ManejadorErrores {
 
-    /**
-     * Evalúa los campos e ingresa los mensajes de error correspondientes.
-     */
     fun validarFormulario(
         nombre: String,
         email: String,

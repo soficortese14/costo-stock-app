@@ -29,6 +29,9 @@ import cl.duoc.costostock.data.AppState
 import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.utils.ErroresFormulario
 import cl.duoc.costostock.utils.ManejadorErrores
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import cl.duoc.costostock.ui.theme.CostoStockTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +50,7 @@ fun RegistroScreen(
 
     var errores by remember { mutableStateOf(ErroresFormulario()) }
     var mostrarExito by remember { mutableStateOf(false) }
+    var mostrarTerminosDialog by remember { mutableStateOf(false) }
 
     val launcherCamara = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
@@ -80,16 +84,32 @@ fun RegistroScreen(
             FotoPerfilComp(fotoPerfil) { launcherCamara.launch(null) }
 
             // Campos del Formulario
-            CampoTxt(nombre, { nombre = it; errores = errores.copy(errorNombre = null) }, "Nombre Completo", Icons.Default.Person, errores.errorNombre)
-            CampoTxt(email, { email = it; errores = errores.copy(errorEmail = null) }, "Correo Electrónico", Icons.Default.Email, errores.errorEmail, KeyboardType.Email)
-            CampoTxt(numero, { numero = it; errores = errores.copy(errorNumero = null) }, "Teléfono Contacto", Icons.Default.Phone, errores.errorNumero, KeyboardType.Phone)
-            CampoTxt(password, { password = it; errores = errores.copy(errorPassword = null) }, "Contraseña", Icons.Default.Lock, errores.errorPassword, KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
-            CampoTxt(confirmPassword, { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) }, "Confirmar Contraseña", Icons.Default.Lock, errores.errorConfirmPassword, KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
+            CampoTxt(nombre, { nombre = it; errores = errores.copy(errorNombre = null) },
+                "Nombre Completo", Icons.Default.Person, errores.errorNombre)
+
+            CampoTxt(email, { email = it; errores = errores.copy(errorEmail = null) },
+                "Correo Electrónico", Icons.Default.Email, errores.errorEmail, KeyboardType.Email)
+
+            CampoTxt(numero, { numero = it; errores = errores.copy(errorNumero = null) },
+                "Teléfono Contacto", Icons.Default.Phone, errores.errorNumero, KeyboardType.Phone)
+
+            CampoTxt(password, { password = it; errores = errores.copy(errorPassword = null) },
+                "Contraseña", Icons.Default.Lock, errores.errorPassword, KeyboardType.Password,
+                true, passwordVisible) { passwordVisible = !passwordVisible }
+
+            CampoTxt(confirmPassword, { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) },
+                "Confirmar Contraseña", Icons.Default.Lock, errores.errorConfirmPassword, KeyboardType.Password,
+                true, passwordVisible) { passwordVisible = !passwordVisible }
 
             // Términos y Condiciones
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Checkbox(checked = aceptoTerminos, onCheckedChange = { aceptoTerminos = it; errores = errores.copy(errorTerminos = null) })
-                Text("Acepto términos y condiciones de privacidad", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = "Acepto términos y condiciones de privacidad",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.clickable { mostrarTerminosDialog = true },
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
             errores.errorTerminos?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
             errores.errorGeneral?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
@@ -125,6 +145,27 @@ fun RegistroScreen(
                     mostrarExito = false
                     navController.navigate(Rutas.OFERTAS) { popUpTo(Rutas.REGISTRO) { inclusive = true } }
                 }) { Text("Aceptar") }
+            }
+        )
+    }
+
+    if (mostrarTerminosDialog) {
+        AlertDialog(
+            onDismissRequest = { mostrarTerminosDialog = false },
+            title = { Text("Términos y Condiciones de Privacidad") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text("• Finalidad Declarada: El tratamiento de los datos personales recopilados se limita estrictamente a los fines informados al momento de su recolección (ej. uso exclusivo del número telefónico para la coordinación de retiros, excluyendo fines publicitarios).", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text("• Derechos del Titular: El usuario titular de los datos cuenta con el derecho de acceder, rectificar y suprimir su información personal.", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text("• Seguridad de la Información: Se implementan medidas técnicas y organizativas para garantizar que las contraseñas no sean almacenadas en texto plano.", style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { mostrarTerminosDialog = false }) {
+                    Text("Cerrar")
+                }
             }
         )
     }
