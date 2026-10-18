@@ -23,9 +23,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -85,6 +88,7 @@ fun OfertasScreen(
     val ahora by viewModel.ahora.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
     val orden by viewModel.orden.collectAsState()
+    val unidadesCarrito by viewModel.unidadesCarrito.collectAsState()
 
     // Solo hay distancia que mostrar si se conoce donde esta el usuario.
     val ubicacion = (estado as? EstadoUbicacion.Disponible)?.ubicacion
@@ -156,6 +160,23 @@ fun OfertasScreen(
                             contentDescription = "Restaurar catalogo",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
+                    }
+                    // El globo solo aparece si hay algo adentro: un cero
+                    // permanente seria ruido visual.
+                    IconButton(onClick = { navController.navigate(Rutas.CARRITO) }) {
+                        BadgedBox(
+                            badge = {
+                                if (unidadesCarrito > 0) {
+                                    Badge { Text("$unidadesCarrito") }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.ShoppingCart,
+                                contentDescription = "Mi carrito",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
                     }
                     IconButton(onClick = { navController.navigate(Rutas.PERFIL) }) {
                         Icon(

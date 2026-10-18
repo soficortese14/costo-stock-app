@@ -36,6 +36,16 @@ object Rutas {
 
     const val PERFIL = "perfil"
 
+    /*
+     * Carrito y pago (CO-09 y CO-11).
+     *
+     * El pago es pantalla aparte y no un dialogo dentro del carrito: es
+     * un paso con sus propios estados, y asi el boton atras se comporta
+     * como el usuario espera.
+     */
+    const val CARRITO = "carrito"
+    const val PAGO = "pago"
+
     // Modulo proveedor (PR-03)
     const val PUBLICAR_OFERTA = "publicar_oferta"
 
