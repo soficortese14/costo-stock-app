@@ -65,24 +65,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import cl.duoc.costostock.data.AppState
 import cl.duoc.costostock.navigation.Rutas
-import cl.duoc.costostock.utils.esEmailValido
-import cl.duoc.costostock.utils.esNombreValido
-import cl.duoc.costostock.utils.esNumeroChilenoValido
-import cl.duoc.costostock.utils.esPasswordValida
+import cl.duoc.costostock.utils.ErroresFormulario
+import cl.duoc.costostock.utils.ManejadorErrores
 
-/**
- * Pantalla de Registro de Comprador.
- *
- * Muestra el formulario con foto de perfil, datos personales,
- * validaciones e íconos de error visuales.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroScreen(
     navController: NavController,
     appState: AppState = remember { AppState() }
 ) {
-    // 1. Estados del formulario
+    // 1. Datos del formulario
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var numero by remember { mutableStateOf("") }
@@ -90,21 +82,15 @@ fun RegistroScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
 
-    // 2. Estados de visibilidad y fotos
+    // 2. Visibilidad y Foto de perfil
     var passwordVisible by remember { mutableStateOf(false) }
     var fotoPerfil by remember { mutableStateOf<Bitmap?>(null) }
 
-    // 3. Estados de errores
-    var errNombre by remember { mutableStateOf<String?>(null) }
-    var errEmail by remember { mutableStateOf<String?>(null) }
-    var errNumero by remember { mutableStateOf<String?>(null) }
-    var errPassword by remember { mutableStateOf<String?>(null) }
-    var errConfirm by remember { mutableStateOf<String?>(null) }
-    var errTerminos by remember { mutableStateOf<String?>(null) }
-    var errGeneral by remember { mutableStateOf<String?>(null) }
+    // 3. Manejo de Errores centralizado en un objeto
+    var errores by remember { mutableStateOf(ErroresFormulario()) }
     var mostrarExito by remember { mutableStateOf(false) }
 
-    // Launchers para la Cámara
+    // Launcher de la Cámara
     val launcherCamara = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap -> if (bitmap != null) fotoPerfil = bitmap }
@@ -180,39 +166,39 @@ fun RegistroScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- CAMPOS DEL FORMULARIO ---
+            // --- CAMPOS DE TEXTO ---
             CampoFormulario(
                 value = nombre,
-                onValueChange = { nombre = it; errNombre = null },
+                onValueChange = { nombre = it; errores = errores.copy(errorNombre = null) },
                 label = "Nombre Completo",
                 icon = Icons.Default.Person,
-                error = errNombre
+                error = errores.errorNombre
             )
 
             CampoFormulario(
                 value = email,
-                onValueChange = { email = it; errEmail = null },
-                label = "Correo Electrónico",
+                onValueChange = { email = it; errores = errores.copy(errorEmail = null) },
+                label = "Correo Electrónico (ej: usuario@correo.com)",
                 icon = Icons.Default.Email,
-                error = errEmail,
+                error = errores.errorEmail,
                 keyboardType = KeyboardType.Email
             )
 
             CampoFormulario(
                 value = numero,
-                onValueChange = { numero = it; errNumero = null },
-                label = "Teléfono Chileno (ej: 912345678)",
+                onValueChange = { numero = it; errores = errores.copy(errorNumero = null) },
+                label = "Teléfono de Contacto",
                 icon = Icons.Default.Phone,
-                error = errNumero,
+                error = errores.errorNumero,
                 keyboardType = KeyboardType.Phone
             )
 
             CampoFormulario(
                 value = password,
-                onValueChange = { password = it; errPassword = null },
-                label = "Contraseña",
+                onValueChange = { password = it; errores = errores.copy(errorPassword = null) },
+                label = "Contraseña (mínimo 4 caracteres)",
                 icon = Icons.Default.Lock,
-                error = errPassword,
+                error = errores.errorPassword,
                 isPassword = true,
                 passwordVisible = passwordVisible,
                 onTogglePassword = { passwordVisible = !passwordVisible }
@@ -220,55 +206,58 @@ fun RegistroScreen(
 
             CampoFormulario(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it; errConfirm = null },
+                onValueChange = { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) },
                 label = "Confirmar Contraseña",
                 icon = Icons.Default.Lock,
-                error = errConfirm,
+                error = errores.errorConfirmPassword,
                 isPassword = true,
                 passwordVisible = passwordVisible,
                 onTogglePassword = { passwordVisible = !passwordVisible }
             )
 
-            // --- CASILLA DE CONSENTIMIENTO ---
+            // --- CASILLA DE TÉRMINOS Y CONDICIONES ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Checkbox(
                     checked = aceptoTerminos,
-                    onCheckedChange = { aceptoTerminos = it; errTerminos = null }
+                    onCheckedChange = {
+                        aceptoTerminos = it
+                        errores = errores.copy(errorTerminos = null)
+                    }
                 )
                 Text(
-                    text = "Acepto los términos y condiciones de privacidad.",
+                    text = "Acepto los términos, condiciones y políticas de privacidad.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            errTerminos?.let {
+            errores.errorTerminos?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
-            errGeneral?.let {
+            errores.errorGeneral?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- BOTÓN REGISTRARSE ---
+            // --- BOTÓN DE REGISTRO ---
             Button(
                 onClick = {
-                    // Validaciones rápidas
-                    errNombre = if (!esNombreValido(nombre)) "Nombre inválido (min. 2 letras)" else null
-                    errEmail = if (!esEmailValido(email)) "Correo electrónico inválido" else null
-                    errNumero = if (!esNumeroChilenoValido(numero)) "Teléfono chileno inválido (ej: 912345678)" else null
-                    errPassword = if (!esPasswordValida(password)) "La contraseña debe tener mínimo 6 caracteres" else null
-                    errConfirm = if (password != confirmPassword) "Las contraseñas no coinciden" else null
-                    errTerminos = if (!aceptoTerminos) "Debe aceptar los términos y condiciones" else null
+                    // Validar los campos usando el ManejadorErrores independiente
+                    errores = ManejadorErrores.validarFormulario(
+                        nombre = nombre,
+                        email = email,
+                        numero = numero,
+                        password = password,
+                        confirmPassword = confirmPassword,
+                        aceptoTerminos = aceptoTerminos
+                    )
 
-                    // Si no hay ningún error, registrar
-                    if (errNombre == null && errEmail == null && errNumero == null &&
-                        errPassword == null && errConfirm == null && errTerminos == null
-                    ) {
+                    // Si todos los datos son válidos, proceder al registro
+                    if (errores.esValido) {
                         val exito = appState.registrarComprador(
                             nombre = nombre.trim(),
                             email = email.trim(),
@@ -278,10 +267,9 @@ fun RegistroScreen(
                             aceptoTerminos = aceptoTerminos
                         )
                         if (exito) {
-                            errGeneral = null
                             mostrarExito = true
                         } else {
-                            errGeneral = "Este correo electrónico ya está registrado."
+                            errores = errores.copy(errorGeneral = "Este correo electrónico ya está registrado.")
                         }
                     }
                 },
@@ -301,7 +289,7 @@ fun RegistroScreen(
         AlertDialog(
             onDismissRequest = { mostrarExito = false },
             title = { Text("¡Registro Exitoso!") },
-            text = { Text("Bienvenido $nombre. Tu cuenta de comprador ha sido creada.") },
+            text = { Text("Bienvenido $nombre. Tu cuenta de comprador ha sido registrada exitosamente.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -320,7 +308,6 @@ fun RegistroScreen(
 
 /**
  * Componente reutilizable para los campos de texto del formulario.
- * Reduce el código repetido y facilita la lectura para un estudiante.
  */
 @Composable
 private fun CampoFormulario(
@@ -341,7 +328,6 @@ private fun CampoFormulario(
         leadingIcon = { Icon(icon, contentDescription = label) },
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Ícono visual de error cuando falle la validación
                 if (error != null) {
                     Icon(
                         imageVector = Icons.Default.Error,
@@ -350,7 +336,6 @@ private fun CampoFormulario(
                         modifier = Modifier.padding(end = 4.dp)
                     )
                 }
-                // Botón de ver/ocultar contraseña
                 if (isPassword) {
                     IconButton(onClick = onTogglePassword) {
                         Icon(
