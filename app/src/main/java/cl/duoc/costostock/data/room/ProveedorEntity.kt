@@ -8,7 +8,7 @@ data class ProveedorEntity(
     @PrimaryKey val rut: String,
     val password: String,
     val razonSocial: String,
-    val giro: Int,
+    val giro: String,
     val comuna: String,
-    val telefono: Int
+    val telefono: String
 )
