@@ -41,6 +41,15 @@ sealed class EstadoUbicacion {
 }
 
 /**
+ * Criterio con el que se ordena el catalogo.
+ *
+ * VIGENCIA pone primero lo que esta por vencer, que es el gancho del
+ * negocio. CERCANIA pone primero lo que el usuario puede ir a buscar
+ * caminando, que importa porque Costo Stock no tiene delivery.
+ */
+enum class OrdenCatalogo { VIGENCIA, CERCANIA }
+
+/**
  * Pantalla de ofertas: resuelve la ubicacion del usuario y entrega
  * el catalogo filtrado por categoria.
  */
@@ -78,6 +87,9 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
 
     private val _comuna = MutableStateFlow(OfertaRepository.COMUNA_TODAS)
     val comuna: StateFlow<String> = _comuna
+
+    private val _orden = MutableStateFlow(OrdenCatalogo.VIGENCIA)
+    val orden: StateFlow<OrdenCatalogo> = _orden
 
     /**
      * Comunas disponibles para filtrar. Salen de la tabla, asi que una
@@ -126,8 +138,9 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
         combine(
             filtros,
             _estado,
+            _orden,
             repositorio.observarOfertas()
-        ) { f, estadoUbicacion, todas ->
+        ) { f, estadoUbicacion, ordenActual, todas ->
             todas
                 .filter {
                     f.categoria == OfertaRepository.CATEGORIA_TODAS ||
@@ -139,6 +152,7 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
                 }
                 .filter { coincideConBusqueda(it, f.texto) }
                 .filter { dentroDelRadio(it, estadoUbicacion, f.radioKm) }
+                .let { ordenar(it, ordenActual, estadoUbicacion) }
         }
             .stateIn(
                 scope = viewModelScope,
@@ -198,6 +212,10 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
 
     fun cambiarComuna(nueva: String) {
         _comuna.value = nueva
+    }
+
+    fun cambiarOrden(nuevo: OrdenCatalogo) {
+        _orden.value = nuevo
     }
 
     /** Cambia el radio de busqueda, entre 1 y 30 km. */
@@ -269,3 +287,27 @@ private fun dentroDelRadio(
     )
     return distancia <= radioKm
 }
+
+/**
+ * Ordena el catalogo segun el criterio elegido.
+ *
+ * Si se pide cercania pero no hay ubicacion, no hay desde donde medir,
+ * asi que se cae a vigencia en vez de dejar la lista en cualquier orden.
+ */
+private fun ordenar(
+    ofertas: List<OfertaEntity>,
+    orden: OrdenCatalogo,
+    estado: EstadoUbicacion
+): List<OfertaEntity> =
+    if (orden == OrdenCatalogo.CERCANIA && estado is EstadoUbicacion.Disponible) {
+        ofertas.sortedBy {
+            distanciaKm(
+                estado.ubicacion.latitud,
+                estado.ubicacion.longitud,
+                it.latitud,
+                it.longitud
+            )
+        }
+    } else {
+        ofertas.sortedBy { it.finVigencia }
+    }
