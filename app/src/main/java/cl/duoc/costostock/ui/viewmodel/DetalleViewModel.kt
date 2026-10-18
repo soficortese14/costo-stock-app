@@ -4,10 +4,14 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.Perfil
+import cl.duoc.costostock.data.PreferenciasManager
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -30,6 +34,18 @@ sealed class EstadoDetalle {
 class DetalleViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repositorio = OfertaRepository(application)
+    private val preferencias = PreferenciasManager(application)
+
+    /**
+     * Perfil con el que se navega. Decide si se ofrece editar la oferta:
+     * un comprador no puede modificar lo que publico otro.
+     */
+    val perfilActivo: StateFlow<Perfil> =
+        preferencias.perfilActivo.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = Perfil.COMPRADOR
+        )
 
     private val _estado = MutableStateFlow<EstadoDetalle>(EstadoDetalle.Cargando)
     val estado: StateFlow<EstadoDetalle> = _estado

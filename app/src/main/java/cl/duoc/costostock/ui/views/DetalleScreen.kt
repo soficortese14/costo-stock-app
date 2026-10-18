@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
@@ -56,8 +57,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
+import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.data.room.OfertaEntity
 import cl.duoc.costostock.ui.theme.TerracotaTexto
+import cl.duoc.costostock.navigation.Rutas
 import cl.duoc.costostock.ui.viewmodel.DetalleViewModel
 import cl.duoc.costostock.ui.viewmodel.EstadoDetalle
 import java.util.Locale
@@ -79,6 +82,7 @@ fun DetalleScreen(
     val ahora by viewModel.ahora.collectAsState()
     val comprando by viewModel.comprando.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
+    val perfil by viewModel.perfilActivo.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
 
@@ -105,6 +109,22 @@ fun DetalleScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 title = { Text("Detalle") },
+                actions = {
+                    // Editar es una accion del proveedor, igual que publicar.
+                    if (perfil == Perfil.PROVEEDOR) {
+                        IconButton(
+                            onClick = {
+                                navController.navigate(Rutas.editarOferta(ofertaId))
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Editar oferta",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(

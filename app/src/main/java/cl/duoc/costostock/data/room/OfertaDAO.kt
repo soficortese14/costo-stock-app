@@ -32,6 +32,10 @@ interface OfertaDAO {
      *
      * COLLATE NOCASE ignora mayusculas: "Pan integral" y "pan integral"
      * se consideran el mismo producto.
+     *
+     * excluirId deja fuera una oferta de la comparacion. Al editar hay que
+     * ignorar la propia, o se detectaria a si misma como duplicada. Al
+     * publicar una nueva se pasa 0, que no existe como id.
      */
     @Query(
         """
@@ -39,13 +43,15 @@ interface OfertaDAO {
         WHERE titulo = :titulo COLLATE NOCASE
           AND comercio = :comercio COLLATE NOCASE
           AND finVigencia > :ahora
+          AND id != :excluirId
         LIMIT 1
         """
     )
     suspend fun buscarDuplicada(
         titulo: String,
         comercio: String,
-        ahora: Long
+        ahora: Long,
+        excluirId: Long
     ): OfertaEntity?
 
     /**
@@ -70,6 +76,10 @@ interface OfertaDAO {
     /** Descuenta stock al comprar. */
     @Query("UPDATE ofertas SET stockActual = stockActual - :cantidad WHERE id = :id")
     suspend fun descontarStock(id: Long, cantidad: Int)
+
+    /** Retira una oferta del catalogo. */
+    @Query("DELETE FROM ofertas WHERE id = :id")
+    suspend fun eliminar(id: Long)
 
     @Query("DELETE FROM ofertas")
     suspend fun borrarTodas()
