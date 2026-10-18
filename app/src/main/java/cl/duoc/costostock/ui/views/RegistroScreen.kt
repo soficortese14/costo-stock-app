@@ -6,61 +6,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import cl.duoc.costostock.data.AppState
@@ -74,38 +36,29 @@ fun RegistroScreen(
     navController: NavController,
     appState: AppState = remember { AppState() }
 ) {
-    // 1. Datos del formulario
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var numero by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var aceptoTerminos by remember { mutableStateOf(false) }
-
-    // 2. Visibilidad y Foto de perfil
     var passwordVisible by remember { mutableStateOf(false) }
     var fotoPerfil by remember { mutableStateOf<Bitmap?>(null) }
 
-    // 3. Manejo de Errores centralizado en un objeto
     var errores by remember { mutableStateOf(ErroresFormulario()) }
     var mostrarExito by remember { mutableStateOf(false) }
 
-    // Launcher de la Cámara
     val launcherCamara = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap -> if (bitmap != null) fotoPerfil = bitmap }
+        ActivityResultContracts.TakePicturePreview()
+    ) { if (it != null) fotoPerfil = it }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                ),
                 title = { Text("Registro de Comprador") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                     }
                 }
             )
@@ -119,242 +72,112 @@ fun RegistroScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Text("Crear Cuenta", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
-            Text(
-                text = "Crear Cuenta de Comprador",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Spacer(Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Foto de Perfil
+            FotoPerfilComp(fotoPerfil) { launcherCamara.launch(null) }
 
-            // --- FOTO DE PERFIL ---
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    .clickable { launcherCamara.launch(null) }
-            ) {
-                if (fotoPerfil != null) {
-                    Image(
-                        bitmap = fotoPerfil!!.asImageBitmap(),
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Sin foto",
-                        modifier = Modifier.fillMaxSize(),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                }
+            // Campos del Formulario
+            CampoTxt(nombre, { nombre = it; errores = errores.copy(errorNombre = null) }, "Nombre Completo", Icons.Default.Person, errores.errorNombre)
+            CampoTxt(email, { email = it; errores = errores.copy(errorEmail = null) }, "Correo Electrónico", Icons.Default.Email, errores.errorEmail, KeyboardType.Email)
+            CampoTxt(numero, { numero = it; errores = errores.copy(errorNumero = null) }, "Teléfono Contacto", Icons.Default.Phone, errores.errorNumero, KeyboardType.Phone)
+            CampoTxt(password, { password = it; errores = errores.copy(errorPassword = null) }, "Contraseña", Icons.Default.Lock, errores.errorPassword, KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
+            CampoTxt(confirmPassword, { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) }, "Confirmar Contraseña", Icons.Default.Lock, errores.errorConfirmPassword, KeyboardType.Password, true, passwordVisible) { passwordVisible = !passwordVisible }
+
+            // Términos y Condiciones
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Checkbox(checked = aceptoTerminos, onCheckedChange = { aceptoTerminos = it; errores = errores.copy(errorTerminos = null) })
+                Text("Acepto términos y condiciones de privacidad", style = MaterialTheme.typography.bodySmall)
             }
+            errores.errorTerminos?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            errores.errorGeneral?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
 
-            OutlinedButton(
-                onClick = { launcherCamara.launch(null) },
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Tomar Foto")
-            }
+            Spacer(Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- CAMPOS DE TEXTO ---
-            CampoFormulario(
-                value = nombre,
-                onValueChange = { nombre = it; errores = errores.copy(errorNombre = null) },
-                label = "Nombre Completo",
-                icon = Icons.Default.Person,
-                error = errores.errorNombre
-            )
-
-            CampoFormulario(
-                value = email,
-                onValueChange = { email = it; errores = errores.copy(errorEmail = null) },
-                label = "Correo Electrónico (ej: usuario@correo.com)",
-                icon = Icons.Default.Email,
-                error = errores.errorEmail,
-                keyboardType = KeyboardType.Email
-            )
-
-            CampoFormulario(
-                value = numero,
-                onValueChange = { numero = it; errores = errores.copy(errorNumero = null) },
-                label = "Teléfono de Contacto",
-                icon = Icons.Default.Phone,
-                error = errores.errorNumero,
-                keyboardType = KeyboardType.Phone
-            )
-
-            CampoFormulario(
-                value = password,
-                onValueChange = { password = it; errores = errores.copy(errorPassword = null) },
-                label = "Contraseña (mínimo 4 caracteres)",
-                icon = Icons.Default.Lock,
-                error = errores.errorPassword,
-                isPassword = true,
-                passwordVisible = passwordVisible,
-                onTogglePassword = { passwordVisible = !passwordVisible }
-            )
-
-            CampoFormulario(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) },
-                label = "Confirmar Contraseña",
-                icon = Icons.Default.Lock,
-                error = errores.errorConfirmPassword,
-                isPassword = true,
-                passwordVisible = passwordVisible,
-                onTogglePassword = { passwordVisible = !passwordVisible }
-            )
-
-            // --- CASILLA DE TÉRMINOS Y CONDICIONES ---
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = aceptoTerminos,
-                    onCheckedChange = {
-                        aceptoTerminos = it
-                        errores = errores.copy(errorTerminos = null)
-                    }
-                )
-                Text(
-                    text = "Acepto los términos, condiciones y políticas de privacidad.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            errores.errorTerminos?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-
-            errores.errorGeneral?.let {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- BOTÓN DE REGISTRO ---
+            // Botón Registrarse
             Button(
                 onClick = {
-                    // Validar los campos usando el ManejadorErrores independiente
-                    errores = ManejadorErrores.validarFormulario(
-                        nombre = nombre,
-                        email = email,
-                        numero = numero,
-                        password = password,
-                        confirmPassword = confirmPassword,
-                        aceptoTerminos = aceptoTerminos
-                    )
-
-                    // Si todos los datos son válidos, proceder al registro
+                    errores = ManejadorErrores.validarFormulario(nombre, email, numero, password, confirmPassword, aceptoTerminos)
                     if (errores.esValido) {
-                        val exito = appState.registrarComprador(
-                            nombre = nombre.trim(),
-                            email = email.trim(),
-                            numero = numero.trim(),
-                            password = password,
-                            fotoPerfil = fotoPerfil,
-                            aceptoTerminos = aceptoTerminos
-                        )
-                        if (exito) {
+                        if (appState.registrarComprador(nombre.trim(), email.trim(), numero.trim(), password, fotoPerfil, aceptoTerminos)) {
                             mostrarExito = true
                         } else {
                             errores = errores.copy(errorGeneral = "Este correo electrónico ya está registrado.")
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text("Registrarse", style = MaterialTheme.typography.titleMedium)
+                Text("Registrarse")
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
-    // DIÁLOGO DE ÉXITO
     if (mostrarExito) {
         AlertDialog(
             onDismissRequest = { mostrarExito = false },
             title = { Text("¡Registro Exitoso!") },
-            text = { Text("Bienvenido $nombre. Tu cuenta de comprador ha sido registrada exitosamente.") },
+            text = { Text("Bienvenido $nombre. Tu cuenta ha sido registrada.") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        mostrarExito = false
-                        navController.navigate(Rutas.OFERTAS) {
-                            popUpTo(Rutas.REGISTRO) { inclusive = true }
-                        }
-                    }
-                ) {
-                    Text("Aceptar")
-                }
+                TextButton(onClick = {
+                    mostrarExito = false
+                    navController.navigate(Rutas.OFERTAS) { popUpTo(Rutas.REGISTRO) { inclusive = true } }
+                }) { Text("Aceptar") }
             }
         )
     }
 }
 
-/**
- * Componente reutilizable para los campos de texto del formulario.
- */
 @Composable
-private fun CampoFormulario(
+private fun FotoPerfilComp(foto: Bitmap?, onTomarFoto: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(90.dp).clip(CircleShape).border(2.dp, MaterialTheme.colorScheme.primary, CircleShape).clickable(onClick = onTomarFoto)
+    ) {
+        if (foto != null) Image(bitmap = foto.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
+        else Icon(Icons.Default.AccountCircle, null, modifier = Modifier.fillMaxSize(), tint = MaterialTheme.colorScheme.outline)
+    }
+    OutlinedButton(onClick = onTomarFoto, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)) {
+        Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(4.dp))
+        Text("Tomar Foto")
+    }
+}
+
+@Composable
+private fun CampoTxt(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
     icon: ImageVector,
     error: String? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
-    onTogglePassword: () -> Unit = {},
-    keyboardType: KeyboardType = KeyboardType.Text
+    onTogglePassword: () -> Unit = {}
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = label) },
+        leadingIcon = { Icon(icon, null) },
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (error != null) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = "Error",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                }
+                if (error != null) Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error)
                 if (isPassword) {
                     IconButton(onClick = onTogglePassword) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Mostrar u ocultar"
-                        )
+                        Icon(if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
                     }
                 }
             }
         },
         isError = error != null,
-        supportingText = {
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        },
+        supportingText = { error?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
         singleLine = true,
         visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
     )
 }
