@@ -13,6 +13,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.ui.ui.view.LoginProveedor
+import cl.duoc.costostock.ui.ui.view.RegistroProveedor
 import cl.duoc.costostock.ui.views.CarritoScreen
 import cl.duoc.costostock.ui.views.ConsultaPedidoScreen
 import cl.duoc.costostock.ui.views.DetalleScreen
@@ -94,6 +95,18 @@ fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateP
         }
         composable(Rutas.POSTULACION_PROVEEDOR) {
             LoginProveedor(navController, appStateProveedor)
+        }
+        /*
+         * Registro de proveedor.
+         *
+         * La pantalla ya existia y estaba completa, pero su ruta nunca se
+         * declaro aqui: el enlace desde el login navegaba a un destino
+         * inexistente y la app se caia. Sin esta ruta el modulo queda en
+         * circulo cerrado, porque no se puede registrar a nadie y entonces
+         * tampoco se puede iniciar sesion.
+         */
+        composable("registro_proveedor") {
+            RegistroProveedor(navController, appStateProveedor)
         }
         composable(Rutas.OFERTAS) {
             OfertasScreen(navController)
