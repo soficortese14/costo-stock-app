@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -173,6 +174,48 @@ fun PerfilScreen(
                 )
                 Spacer(Modifier.size(8.dp))
                 Text("Consultar un pedido", fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            /*
+             * Entradas a los modulos de registro y de proveedor.
+             *
+             * Sus pantallas ya estaban conectadas al NavHost, pero ninguna
+             * parte de la interfaz llevaba hasta ellas: el registro se iba
+             * a alcanzar desde el login, que todavia no se integra. Estos
+             * dos botones son esa puerta de entrada.
+             */
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.REGISTRO) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.PersonAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Crear cuenta de comprador", fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.POSTULACION_PROVEEDOR) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Storefront,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Postular como proveedor", fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(12.dp))
