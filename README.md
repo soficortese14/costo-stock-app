@@ -20,10 +20,6 @@ Aplicación móvil Android diseñada para la gestión de inventario y compra/ven
 
 ## 👥 Equipo de Desarrollo
 *   [Sofía Cortese] - Acceso y Navegación.
-*   [Nombre 2] - Encargadx de X.
-*   [Nombre 3] - Encargadx de X.
-*   [Nombre 4] - Encargadx de X.
-
-
-
-Falta aún cosas por agregar y modificar, si se me pasó algo o quieren complementar, adelante!!
+*   [Miguel Arguello] - Postulación Proveedor.
+*   [George Giovine] - Login y seguridad.
+*   [Philippe Nowajewsky] - Registro Comprador.
