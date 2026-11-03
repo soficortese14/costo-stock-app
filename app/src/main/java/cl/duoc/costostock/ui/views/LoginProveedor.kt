@@ -8,11 +8,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -22,10 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.utilsproveedor.validarRUT
@@ -35,53 +45,115 @@ import cl.duoc.costostock.utilsproveedor.validarRUT
 fun LoginProveedor(
     navController: NavController,
     appStateProveedor: AppStateProveedor
-){
+) {
+    // Lógica intacta de tu compañero
     var rut by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-    val context = LocalContext.current //Con esto usaré el Toast
-
-
+    val context = LocalContext.current
 
     Scaffold(
-        topBar = { TopAppBar(
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.primary,
-            ),
-            title = { Text("Login") }) }
-    ) { padding ->
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Login Proveedor",
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary, // Naranja Terracota
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary, // Blanco
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary // Blanco
+                )
+            )
+        }
+    ) { paddingValues ->
+        Surface(
+            modifier = Modifier.fillMaxSize()
+                .padding(paddingValues),
+            color = MaterialTheme.colorScheme.background
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center
+                    .padding(horizontal = 32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+                // Cabecera igual a tu LoginScreen
+                Text(
+                    text = "Costo Stock",
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Portal Proveedores",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(48.dp))
+
                 OutlinedTextField(
                     value = rut,
                     onValueChange = { rut = it },
-                    label = { Text("Usuario") },
+                    label = { Text("Usuario (RUT)") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
-                Spacer(Modifier.height(8.dp)) //Para dibujar espacio entre controles
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text("Contraseña") },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),//oculta la contraseña
-                    modifier = Modifier.fillMaxWidth()
+                    visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedContainerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
-                Spacer(Modifier.height(16.dp))
-                //verifico si hay algún error
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Renderizado del error adaptado a tu UI
                 if (error.isNotEmpty()) {
-                    Text(error, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
+
                 Button(
-                    onClick = { //verificar reglas de negocio implícitas
+                    onClick = {
+                        // Reglas de negocio intactas
                         if (rut.isBlank() || password.isBlank()) {
                             error = "Debe Ingresar Usuario y Contraseña."
                         } else if (!validarRUT(rut)) {
@@ -90,24 +162,32 @@ fun LoginProveedor(
                             error = "La contraseña debe tener al menos 3 caracteres."
                         } else if (appStateProveedor.login(rut, password)) {
                             error = ""
-                            Toast.makeText(context,"Registro Exitoso", Toast.LENGTH_SHORT).show()
-                            // TO DO: La navegación debe colocarlo en la página, imagino algo como:
+                            Toast.makeText(context, "Registro Exitoso", Toast.LENGTH_SHORT).show()
                             // navController.navigate("menu") {
                             //popUpTo("login") { inclusive = true }
                         } else {
                             error = "Usuario o contraseña incorrectos."
-
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Iniciar Sesión")
+                    Text("Iniciar Sesión", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-                TextButton(onClick = {/*navegar hacia pantalla de registro*/
-                    navController.navigate("registro_proveedor")
-                }) {
-                    Text("¿No ha registrado su empresa? ¡Haga click aquí para ser un proveedor de Costo Stock!")
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                TextButton(onClick = { navController.navigate("registro_proveedor") }) {
+                    Text(
+                        text = "¿No ha registrado su empresa? Regístrese",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
 }
+

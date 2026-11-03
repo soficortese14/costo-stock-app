@@ -9,10 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,20 +24,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import cl.duoc.costostock.data.AppState
 import cl.duoc.costostock.navigation.Rutas
+import cl.duoc.costostock.ui.viewmodel.RegistroViewModel
 import cl.duoc.costostock.utils.ErroresFormulario
 import cl.duoc.costostock.utils.ManejadorErrores
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
-import cl.duoc.costostock.ui.theme.CostoStockTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistroScreen(
     navController: NavController,
-    appState: AppState = remember { AppState() }
+    viewModel: RegistroViewModel
 ) {
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -49,8 +47,10 @@ fun RegistroScreen(
     var fotoPerfil by remember { mutableStateOf<Bitmap?>(null) }
 
     var errores by remember { mutableStateOf(ErroresFormulario()) }
-    var mostrarExito by remember { mutableStateOf(false) }
     var mostrarTerminosDialog by remember { mutableStateOf(false) }
+
+    val registroExitoso by viewModel.registroExitoso.collectAsState()
+    val errorGeneralBD by viewModel.errorGeneral.collectAsState()
 
     val launcherCamara = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
@@ -59,90 +59,177 @@ fun RegistroScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro de Comprador") },
+                title = { Text(text = "Registro", fontWeight = FontWeight.Medium) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Crear Cuenta", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-
-            Spacer(Modifier.height(12.dp))
-
-            // Foto de Perfil
-            FotoPerfilComp(fotoPerfil) { launcherCamara.launch(null) }
-
-            // Campos del Formulario
-            CampoTxt(nombre, { nombre = it; errores = errores.copy(errorNombre = null) },
-                "Nombre Completo", Icons.Default.Person, errores.errorNombre)
-
-            CampoTxt(email, { email = it; errores = errores.copy(errorEmail = null) },
-                "Correo Electrónico", Icons.Default.Email, errores.errorEmail, KeyboardType.Email)
-
-            CampoTxt(numero, { numero = it; errores = errores.copy(errorNumero = null) },
-                "Teléfono Contacto", Icons.Default.Phone, errores.errorNumero, KeyboardType.Phone)
-
-            CampoTxt(password, { password = it; errores = errores.copy(errorPassword = null) },
-                "Contraseña", Icons.Default.Lock, errores.errorPassword, KeyboardType.Password,
-                true, passwordVisible) { passwordVisible = !passwordVisible }
-
-            CampoTxt(confirmPassword, { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) },
-                "Confirmar Contraseña", Icons.Default.Lock, errores.errorConfirmPassword, KeyboardType.Password,
-                true, passwordVisible) { passwordVisible = !passwordVisible }
-
-            // Términos y Condiciones
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Checkbox(checked = aceptoTerminos, onCheckedChange = { aceptoTerminos = it; errores = errores.copy(errorTerminos = null) })
-                Text(
-                    text = "Acepto términos y condiciones de privacidad",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.clickable { mostrarTerminosDialog = true },
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            errores.errorTerminos?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-            errores.errorGeneral?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-
-            Spacer(Modifier.height(12.dp))
-
-            // Botón Registrarse
-            Button(
-                onClick = {
-                    errores = ManejadorErrores.validarFormulario(nombre, email, numero, password, confirmPassword, aceptoTerminos)
-                    if (errores.esValido) {
-                        if (appState.registrarComprador(nombre.trim(), email.trim(), numero.trim(), password, fotoPerfil, aceptoTerminos)) {
-                            mostrarExito = true
-                        } else {
-                            errores = errores.copy(errorGeneral = "Este correo electrónico ya está registrado.")
-                        }
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Registrarse")
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Costo Stock",
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Crea tu cuenta de Comprador",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                FotoPerfilComp(fotoPerfil) { launcherCamara.launch(null) }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                CampoTxt(
+                    nombre, { nombre = it; errores = errores.copy(errorNombre = null) },
+                    "Nombre Completo", Icons.Default.Person, errores.errorNombre
+                )
+
+                CampoTxt(
+                    email, { email = it; errores = errores.copy(errorEmail = null) },
+                    "Correo Electrónico", Icons.Default.Email, errores.errorEmail, KeyboardType.Email
+                )
+
+                CampoTxt(
+                    numero, { numero = it; errores = errores.copy(errorNumero = null) },
+                    "Teléfono Contacto", Icons.Default.Phone, errores.errorNumero, KeyboardType.Phone
+                )
+
+                CampoTxt(
+                    password, { password = it; errores = errores.copy(errorPassword = null) },
+                    "Contraseña", Icons.Default.Lock, errores.errorPassword, KeyboardType.Password,
+                    true, passwordVisible
+                ) { passwordVisible = !passwordVisible }
+
+                CampoTxt(
+                    confirmPassword,
+                    { confirmPassword = it; errores = errores.copy(errorConfirmPassword = null) },
+                    "Confirmar Contraseña",
+                    Icons.Default.Lock,
+                    errores.errorConfirmPassword,
+                    KeyboardType.Password,
+                    true,
+                    passwordVisible
+                ) { passwordVisible = !passwordVisible }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = aceptoTerminos,
+                        onCheckedChange = {
+                            aceptoTerminos = it; errores = errores.copy(errorTerminos = null)
+                        })
+                    Text(
+                        text = "Acepto términos y condiciones de privacidad",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.clickable { mostrarTerminosDialog = true },
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                errores.errorTerminos?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                errores.errorGeneral?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+
+                // Renderizado de error de Room (Ej: correo ya existe)
+                if (errorGeneralBD.isNotEmpty()) {
+                    Text(
+                        text = errorGeneralBD,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Button(
+                    onClick = {
+                        errores = ManejadorErrores.validarFormulario(
+                            nombre, email, numero, password, confirmPassword, aceptoTerminos
+                        )
+                        if (errores.esValido) {
+                            viewModel.registrarUsuario(
+                                nombre = nombre.trim(),
+                                correo = email.trim(),
+                                telefono = numero.trim(),
+                                clave = password
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Registrarse", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(
+                    onClick = { navController.navigate(Rutas.LOGIN){
+                        popUpTo(Rutas.REGISTRO) { inclusive = true }
+                    } },
+                    modifier = Modifier.padding(bottom = 32.dp)
+                ) {
+                    Text(
+                        text = "¿Ya tienes cuenta? Inicia Sesión",
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
 
-    if (mostrarExito) {
+    // El diálogo de éxito se activa cuando Room confirma la inserción
+    if (registroExitoso) {
         AlertDialog(
-            onDismissRequest = { mostrarExito = false },
+            onDismissRequest = { viewModel.resetearEstado() },
             title = { Text("¡Registro Exitoso!") },
-            text = { Text("Bienvenido $nombre. Tu cuenta ha sido registrada.") },
+            text = { Text("Bienvenido $nombre. Tu cuenta ha sido registrada en el dispositivo.") },
             confirmButton = {
                 TextButton(onClick = {
-                    mostrarExito = false
+                    viewModel.resetearEstado()
                     navController.navigate(Rutas.OFERTAS) { popUpTo(Rutas.REGISTRO) { inclusive = true } }
                 }) { Text("Aceptar") }
             }
@@ -155,22 +242,21 @@ fun RegistroScreen(
             title = { Text("Términos y Condiciones de Privacidad") },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text("• Finalidad Declarada: El tratamiento de los datos personales recopilados se limita estrictamente a los fines informados al momento de su recolección (ej. uso exclusivo del número telefónico para la coordinación de retiros, excluyendo fines publicitarios).", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Finalidad Declarada: El tratamiento de los datos personales recopilados se limita estrictamente a los fines informados.", style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(8.dp))
-                    Text("• Derechos del Titular: El usuario titular de los datos cuenta con el derecho de acceder, rectificar y suprimir su información personal.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Derechos del Titular: El usuario titular de los datos cuenta con el derecho de acceder, rectificar y suprimir su información.", style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(8.dp))
-                    Text("• Seguridad de la Información: Se implementan medidas técnicas y organizativas para garantizar que las contraseñas no sean almacenadas en texto plano.", style = MaterialTheme.typography.bodyMedium)
+                    Text("• Seguridad: Las contraseñas no se almacenan en texto plano, son protegidas mediante algoritmos unidireccionales SHA-256.", style = MaterialTheme.typography.bodyMedium)
                 }
             },
             confirmButton = {
-                TextButton(onClick = { mostrarTerminosDialog = false }) {
-                    Text("Cerrar")
-                }
+                TextButton(onClick = { mostrarTerminosDialog = false }) { Text("Cerrar") }
             }
         )
     }
 }
 
+// Subcomponentes intactos
 @Composable
 private fun FotoPerfilComp(foto: Bitmap?, onTomarFoto: () -> Unit) {
     Box(
@@ -180,7 +266,11 @@ private fun FotoPerfilComp(foto: Bitmap?, onTomarFoto: () -> Unit) {
         if (foto != null) Image(bitmap = foto.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize())
         else Icon(Icons.Default.AccountCircle, null, modifier = Modifier.fillMaxSize(), tint = MaterialTheme.colorScheme.outline)
     }
-    OutlinedButton(onClick = onTomarFoto, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)) {
+    OutlinedButton(
+        onClick = onTomarFoto,
+        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
         Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(4.dp))
         Text("Tomar Foto")
@@ -203,13 +293,13 @@ private fun CampoTxt(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = { Icon(icon, null) },
+        leadingIcon = { Icon(icon, null, tint = MaterialTheme.colorScheme.primary) },
         trailingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (error != null) Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error)
                 if (isPassword) {
                     IconButton(onClick = onTogglePassword) {
-                        Icon(if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                        Icon(if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null, tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -219,6 +309,11 @@ private fun CampoTxt(
         singleLine = true,
         visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedContainerColor = MaterialTheme.colorScheme.surface
+        )
     )
 }

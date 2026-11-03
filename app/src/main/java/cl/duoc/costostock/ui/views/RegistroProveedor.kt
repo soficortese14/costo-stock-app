@@ -8,11 +8,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -22,10 +31,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.utilsproveedor.validarRUT
@@ -35,7 +47,9 @@ import cl.duoc.costostock.utilsproveedor.validarTelefono
 @Composable
 fun RegistroProveedor(
     navController: NavController,
-    appStateProveedor: AppStateProveedor){
+    appStateProveedor: AppStateProveedor
+) {
+    // Lógica intacta de tu compañero
     var rut by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmarPassword by remember { mutableStateOf("") }
@@ -46,94 +60,192 @@ fun RegistroProveedor(
     var error by remember { mutableStateOf("") }
     val telefonoValidado = remember(telefono) { validarTelefono(telefono) }
     val telefonoValido = telefonoValidado != null
-    val context = LocalContext.current //Con esto usaré el Toast
-
-
+    val context = LocalContext.current
 
     Scaffold(
-        topBar = { TopAppBar(
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.primary,
-            ),
-            title = { Text("Registro de Usuarios") }) }
-    ) { padding ->
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Registro Proveedor",
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary, // Naranja Terracota
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary, // Blanco
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary // Blanco
+                )
+            )
+        }
+    ){paddingValues ->
+    Surface(
+        modifier = Modifier.fillMaxSize()
+            .padding(paddingValues),
+        color = MaterialTheme.colorScheme.background
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 32.dp)
+                .verticalScroll(rememberScrollState()), // Se agregó scroll por la cantidad de campos
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Cabecera igual a tu RegistroScreen
+            Text(
+                text = "Costo Stock",
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Registro de Proveedor",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             OutlinedTextField(
                 value = rut,
-                onValueChange = {
-                    rut = it},
-                label = {Text("Rut")},
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = { rut = it },
+                label = { Text("RUT") },
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
-            Spacer(Modifier.height(8.dp)) //Para dibujar espacios entre un control y otro
+
+            Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = password,
-                onValueChange = {password = it},
-                label = {Text("Contraseña")},
+                onValueChange = { password = it },
+                label = { Text("Contraseña") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
-            Spacer(Modifier.height(8.dp)) //Para dibujar espacios entre un control y otro
+
+            Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = confirmarPassword,
-                onValueChange = {confirmarPassword = it},
-                label = {Text("Confirmar Contraseña")},
+                onValueChange = { confirmarPassword = it },
+                label = { Text("Confirmar Contraseña") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = razonSocial,
-                onValueChange = {razonSocial = it},
-                label = {Text("Nombre de Empresa")},
+                onValueChange = { razonSocial = it },
+                label = { Text("Nombre de Empresa") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = giro,
-                onValueChange = {giro = it},
-                label = {Text("Giro de Empresa")},
+                onValueChange = { giro = it },
+                label = { Text("Giro de Empresa") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = comuna,
-                onValueChange = {comuna = it},
-                label = {Text("Comuna de Empresa")},
+                onValueChange = { comuna = it },
+                label = { Text("Comuna de Empresa") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
+
             Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = telefono,
-                onValueChange = {limpiando ->
+                onValueChange = { limpiando ->
                     telefono = limpiando.filter { it in '0'..'9' }.take(9)
                 },
-                label = {Text("Teléfono de Empresa")},
-                prefix = {Text("+56 ")},
+                label = { Text("Teléfono de Empresa") },
+                prefix = { Text("+56 ") },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
+
             Spacer(Modifier.height(16.dp))
-            //verifico si hay error
-            if (error.isNotEmpty()){
-                Text(error, color = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.height(8.dp))
+
+            // Renderizado del error adaptado a tu UI
+            if (error.isNotEmpty()) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(16.dp))
             }
-            //dibujo un botón
+
             Button(
-                onClick = { //verifico reglas de negocio
+                onClick = {
+                    // Reglas de negocio intactas
                     when {
                         rut.isBlank() || password.isBlank() || confirmarPassword.isBlank() || razonSocial.isBlank()
                                 || giro.isBlank() || comuna.isBlank() || telefono.isBlank() ->
@@ -148,24 +260,34 @@ fun RegistroProveedor(
                             error = "Las contraseñas no coinciden"
                         !appStateProveedor.registrarProveedor(rut.trim(), password, razonSocial,giro,comuna,telefono) ->
                             error = "El usuario ya existe"
-                        //Si pasa sin errores, entonces va a llegar al else.
                         else -> {
                             error = ""
                             Toast.makeText(context,"Registro Exitoso", Toast.LENGTH_SHORT).show()
-                            // Con esto lo devolvemos al login, como partimos de ahí y después recién a registro es la ruta natural.
                             navController.popBackStack()
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Registrarse")
+                Text("Registrarse", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
-            TextButton(onClick = {/*navegar hacia pantalla de Inicio de Sesión en caso que haya apretado por accidente*/
-                navController.navigate("postulacion_proveedor")
-            }) {
-                Text("¿Ya está asociado con nosotros? ¡Haga click aquí para iniciar Sesión!")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = { navController.navigate("postulacion_proveedor") },
+                modifier = Modifier.padding(bottom = 32.dp)
+            ) {
+                Text(
+                    text = "¿Ya está asociado? Inicie Sesión",
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
+    }
     }
 }

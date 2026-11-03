@@ -16,9 +16,10 @@ import androidx.room.RoomDatabase
         ProveedorEntity::class,
         OfertaEntity::class,
         CarritoEntity::class,
-        PedidoEntity::class
+        PedidoEntity::class,
+        UsuarioEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun carritoDAO(): CarritoDAO
     abstract fun pedidoDAO(): PedidoDAO
 
+    abstract fun UsuarioDAO (): UsuarioDAO
     companion object {
         // Volatile + synchronized: nos aseguramos de crear una ÚNICA instancia
         // de la base de datos en toda la app (patrón Singleton clásico).
