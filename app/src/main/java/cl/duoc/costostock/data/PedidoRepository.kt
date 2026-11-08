@@ -4,6 +4,7 @@ import android.content.Context
 import cl.duoc.costostock.data.room.AppDatabase
 import cl.duoc.costostock.data.room.ItemCarrito
 import cl.duoc.costostock.data.room.PedidoEntity
+import kotlinx.coroutines.flow.Flow
 
 /**
  * En que etapa va el pedido.
@@ -50,6 +51,14 @@ class PedidoRepository(context: Context) {
     private val dao = AppDatabase.getInstance(context).pedidoDAO()
 
     suspend fun guardar(pedido: PedidoEntity) = dao.guardar(pedido)
+
+    /**
+     * Todos los pedidos, del más reciente al más antiguo.
+     *
+     * Es un Flow y no una lista: la pantalla de vouchers queda suscrita y
+     * un pedido nuevo aparece solo, sin que nadie tenga que refrescar.
+     */
+    fun observarTodos(): Flow<List<PedidoEntity>> = dao.observarTodos()
 
     suspend fun buscar(codigo: String): PedidoEntity? =
         dao.buscarPorCodigo(codigo.trim())
