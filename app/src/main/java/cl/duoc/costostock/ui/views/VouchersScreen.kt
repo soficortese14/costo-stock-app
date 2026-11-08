@@ -291,7 +291,8 @@ private fun TarjetaVoucher(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${pedido.unidades} unidades",
+                        text = if (pedido.unidades == 1) "1 unidad"
+                        else "${pedido.unidades} unidades",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
