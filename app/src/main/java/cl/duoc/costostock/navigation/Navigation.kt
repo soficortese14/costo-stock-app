@@ -137,6 +137,10 @@ fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateP
             PagoScreen(navController)
         }
 
+        composable(Rutas.VOUCHERS) {
+            VouchersScreen(navController)
+        }
+
         composable(
             route = Rutas.CONSULTA_PEDIDO,
             arguments = listOf(

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
@@ -174,6 +175,33 @@ fun PerfilScreen(
                 )
                 Spacer(Modifier.size(8.dp))
                 Text("Consultar un pedido", fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            /*
+             * Vouchers (CO-13).
+             *
+             * Va pegado a la consulta de pedido porque resuelven lo
+             * mismo por dos caminos: aca estan todos los codigos
+             * guardados, y la consulta es para cuando se tiene el
+             * codigo a mano y no la sesion. Este acceso es provisorio
+             * hasta que exista el bottom bar, donde Vouchers es una de
+             * las cinco pestanas del comprador.
+             */
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.VOUCHERS) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.QrCode2,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Mis vouchers", fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(12.dp))

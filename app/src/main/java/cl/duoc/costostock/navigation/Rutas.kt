@@ -55,6 +55,14 @@ object Rutas {
     const val ARG_CODIGO = "codigo"
     const val CONSULTA_PEDIDO = "consulta_pedido?$ARG_CODIGO={$ARG_CODIGO}"
 
+    /*
+     * Vouchers (CO-13).
+     *
+     * El historial de compras con el codigo de retiro y su QR. No lleva
+     * argumento: la pantalla lee todos los pedidos de Room.
+     */
+    const val VOUCHERS = "vouchers"
+
     /** consultaPedido("CS-1-A") devuelve la ruta con el codigo puesto. */
     fun consultaPedido(codigo: String? = null): String =
         if (codigo.isNullOrBlank()) "consulta_pedido"
