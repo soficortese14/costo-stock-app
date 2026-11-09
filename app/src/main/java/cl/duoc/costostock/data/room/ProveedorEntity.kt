@@ -3,7 +3,7 @@ package cl.duoc.costostock.data.room
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "proveedores")
+@Entity(tableName = "proveedor")
 data class ProveedorEntity(
     @PrimaryKey val rut: String,
     val password: String,

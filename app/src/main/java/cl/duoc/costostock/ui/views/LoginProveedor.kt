@@ -9,8 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,12 +39,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import cl.duoc.costostock.data.AppStateProveedor
-import cl.duoc.costostock.utilsproveedor.validarRUT
+import cl.duoc.costostock.utils.validarRUT
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +59,7 @@ fun LoginProveedor(
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -120,7 +129,10 @@ fun LoginProveedor(
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    leadingIcon = {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -130,13 +142,28 @@ fun LoginProveedor(
                     onValueChange = { password = it },
                     label = { Text("Contraseña") },
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                         focusedContainerColor = MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    leadingIcon = {
+                        Icon(Icons.Default.Password, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.Visibility
+                                else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Ocultar contraseña"
+                                else "Mostrar contraseña"
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None
+                    else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

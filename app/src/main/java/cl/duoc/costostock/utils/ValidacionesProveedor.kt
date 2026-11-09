@@ -1,4 +1,6 @@
-package cl.duoc.costostock.utilsproveedor
+package cl.duoc.costostock.utils
+
+import kotlin.text.iterator
 
 private val REGEX_RUT = Regex("^\\d{7,8}[\\dK]$")
 
