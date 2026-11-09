@@ -59,5 +59,5 @@ data class ItemCarrito(
         oferta.precioVigente(ahora) * cantidad
 
     /** CO2 evitado por esta linea. */
-    fun co2(): Double = oferta.co2Evitado * cantidad
+    fun co2(): Double = oferta.co2Evitado() * cantidad
 }

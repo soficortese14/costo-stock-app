@@ -45,7 +45,7 @@ data class FactorCO2(
  * de referencia de más abajo.
  */
 class CalculadoraCO2(
-    private val factores: Map<String, FactorCO2> = FACTORES_REFERENCIA
+    private val factores: Map<String, FactorCO2> = FactoresCO2.vigentes()
 ) {
 
     /** El factor de una categoría, o el genérico si no está en la tabla. */
@@ -156,5 +156,40 @@ class CalculadoraCO2(
         /** Coma decimal, como se escribe en Chile. */
         private fun decimal(valor: Double): String =
             String.format(Locale.forLanguageTag("es-CL"), "%.1f", valor)
+    }
+}
+
+/**
+ * La tabla de factores que está usando la app.
+ *
+ * Existe para que el cálculo use los factores del archivo de datos sin
+ * que cada pantalla tenga que ir a buscarlos. La app los carga una vez
+ * al arrancar con [usar] y desde ahí cualquier CalculadoraCO2 creada sin
+ * argumentos los toma.
+ *
+ * Mientras nadie la cargue, devuelve la tabla de referencia que está en
+ * el código. Por eso los tests, que corren sin app, siguen viendo los
+ * valores de referencia y son deterministas.
+ *
+ * @Volatile porque la escribe el hilo principal al arrancar y la leen
+ * las corrutinas que arman las pantallas: sin eso un hilo podría seguir
+ * viendo la tabla vieja en su caché.
+ */
+object FactoresCO2 {
+
+    @Volatile
+    private var tabla: Map<String, FactorCO2> = CalculadoraCO2.FACTORES_REFERENCIA
+
+    fun vigentes(): Map<String, FactorCO2> = tabla
+
+    /**
+     * Reemplaza la tabla por la que viene del archivo de datos.
+     *
+     * Una tabla vacía se ignora: si el archivo falta o está mal escrito
+     * es preferible seguir con los factores de referencia antes que
+     * dejar la app calculando cero CO₂ en todas las ofertas.
+     */
+    fun usar(nuevos: Map<String, FactorCO2>) {
+        if (nuevos.isNotEmpty()) tabla = nuevos
     }
 }

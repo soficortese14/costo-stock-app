@@ -16,6 +16,17 @@ class OfertaRepository(context: Context) {
 
     private val dao = AppDatabase.getInstance(context).ofertaDAO()
 
+    /**
+     * De donde sale el catalogo.
+     *
+     * Antes era OfertasDePrueba, un objeto con las ocho ofertas escritas
+     * como literales de Kotlin. Ahora es un archivo de datos que esta
+     * clase lee y traduce. El dia que exista la API, se reemplaza esta
+     * linea por el cliente de red y el resto del repositorio no cambia:
+     * ese era justamente el punto de separarlo.
+     */
+    private val fuente = CatalogoJson(context)
+
     /** Todas las ofertas. El Flow avisa solo cuando la tabla cambia. */
     fun observarOfertas(): Flow<List<OfertaEntity>> = dao.observarTodas()
 
@@ -29,12 +40,12 @@ class OfertaRepository(context: Context) {
     fun observarComunas(): Flow<List<String>> = dao.observarComunas()
 
     /**
-     * Carga el catalogo de prueba la primera vez que se abre la app.
+     * Carga el catalogo la primera vez que se abre la app.
      * Si la tabla ya tiene datos no hace nada, para no duplicarlos.
      */
     suspend fun cargarDatosIniciales() {
         if (dao.contar() == 0) {
-            dao.insertar(OfertasDePrueba.catalogo())
+            dao.insertar(fuente.cargarOfertas())
         }
     }
 
@@ -74,10 +85,15 @@ class OfertaRepository(context: Context) {
         dao.descontarStock(id, cantidad)
     }
 
-    /** Vuelve a dejar el catalogo como al inicio. Util para demostrar. */
+    /**
+     * Vuelve a dejar el catalogo como al inicio. Util para demostrar.
+     *
+     * Vuelve a leer el archivo, no una copia en memoria: si alguien
+     * edita catalogo.json, este boton trae lo editado.
+     */
     suspend fun reiniciarCatalogo() {
         dao.borrarTodas()
-        dao.insertar(OfertasDePrueba.catalogo())
+        dao.insertar(fuente.cargarOfertas())
     }
 
     companion object {

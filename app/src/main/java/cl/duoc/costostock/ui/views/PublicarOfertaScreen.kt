@@ -70,6 +70,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -422,7 +423,11 @@ fun PublicarOfertaScreen(
                 enter = fadeIn(tween(300)),
                 exit = fadeOut(tween(200))
             ) {
-                VistaPreviaCo2(kilos = viewModel.co2Estimado())
+                VistaPreviaCo2(
+                    kilos = viewModel.co2Estimado(),
+                    cuenta = viewModel.co2Explicado(),
+                    fuente = viewModel.fuenteDelFactor()
+                )
             }
 
             Spacer(Modifier.height(28.dp))
@@ -648,9 +653,16 @@ private fun VistaPreviaDescuento(original: Int, oferta: Int) {
     }
 }
 
-/** El unico bloque verde del formulario: el impacto ambiental. */
+/**
+ * El unico bloque verde del formulario: el impacto ambiental.
+ *
+ * Muestra tres niveles y no solo el numero: el resultado, la
+ * multiplicacion que lo produce y de donde sale el factor. Antes
+ * aparecia unicamente el resultado y no habia forma de saber si era un
+ * calculo o un valor escrito a mano, que fue justamente la critica.
+ */
 @Composable
-private fun VistaPreviaCo2(kilos: Double) {
+private fun VistaPreviaCo2(kilos: Double, cuenta: String, fuente: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -659,14 +671,34 @@ private fun VistaPreviaCo2(kilos: Double) {
             containerColor = MaterialTheme.colorScheme.tertiaryContainer
         )
     ) {
-        Text(
-            text = "🌱 Esta oferta evitaria " +
-                "${String.format(Locale.US, "%.1f", kilos).replace('.', ',')} " +
-                "kg de CO2",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.padding(12.dp)
-        )
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = "🌱 Esta oferta evitaria " +
+                    "${String.format(Locale.US, "%.1f", kilos).replace('.', ',')} " +
+                    "kg de CO2",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
+            if (cuenta.isNotBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = cuenta,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+
+            if (fuente.isNotBlank()) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Factor: $fuente",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+        }
     }
 }
 

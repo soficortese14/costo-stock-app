@@ -278,7 +278,7 @@ private fun ContenidoDetalle(
 
                 Spacer(Modifier.height(16.dp))
 
-                TarjetaImpacto(kilos = oferta.co2Evitado)
+                TarjetaImpacto(kilos = oferta.co2Evitado())
 
                 Spacer(Modifier.height(16.dp))
             }
