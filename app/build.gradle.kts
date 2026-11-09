@@ -1,10 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
-
+val props = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
+}
 android {
+    // Esto para que lea la API en local properties
+    buildFeatures { buildConfig = true }
+    defaultConfig {
+        buildConfigField("String", "API_KEY", "\"${props.getProperty("API_KEY")}\"")
+    }
+
     namespace = "cl.duoc.costostock"
     compileSdk {
         version = release(37)
