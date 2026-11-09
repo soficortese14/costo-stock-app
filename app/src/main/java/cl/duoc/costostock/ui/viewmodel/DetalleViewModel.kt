@@ -64,6 +64,17 @@ class DetalleViewModel(application: Application) : AndroidViewModel(application)
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje
 
+    /**
+     * Se enciende cuando hay que llevar al usuario al carrito.
+     *
+     * Se avisa con una bandera y no navegando desde el ViewModel porque
+     * el ViewModel no conoce el NavController: su trabajo es decir que
+     * paso, y la pantalla decide a donde ir. Es el mismo patron de
+     * _publicada y _eliminada en PublicarOfertaViewModel.
+     */
+    private val _irAlCarrito = MutableStateFlow(false)
+    val irAlCarrito: StateFlow<Boolean> = _irAlCarrito
+
     init {
         iniciarReloj()
     }
@@ -94,20 +105,46 @@ class DetalleViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Descuenta una unidad del stock y recarga la oferta.
-     * Demuestra escritura en Room desde la interfaz.
+     * Comprar: deja la oferta en el carrito y manda al checkout.
+     *
+     * Antes esta funcion descontaba el stock aca mismo y mostraba
+     * "Compra realizada", sin pasar por la pasarela. Eran dos caminos de
+     * compra distintos y solo uno generaba codigo de retiro: el que
+     * apretaba Comprar en el detalle se quedaba sin pedido, sin codigo y
+     * sin voucher, aunque la app le dijera que habia comprado. Ademas
+     * rompia la regla de que el stock se descuenta recien cuando la
+     * pasarela aprueba, porque bastaba tocar el boton para bajarlo.
+     *
+     * Ahora hay un solo camino de compra: carrito, pasarela, pedido con
+     * codigo de retiro y su QR.
      */
-    fun comprar(oferta: OfertaEntity) {
+    fun comprarAhora(oferta: OfertaEntity) {
         viewModelScope.launch {
             _comprando.value = true
 
-            repositorio.comprar(oferta.id, 1)
-            cargar(oferta.id)
+            val agregado = carrito.agregar(
+                ofertaId = oferta.id,
+                cantidad = 1,
+                stockDisponible = oferta.stockActual
+            )
+
+            /*
+             * Si no se agrego es porque el carrito ya tiene todo el stock
+             * disponible. Igual corresponde ir al carrito (el producto ya
+             * esta ahi), pero avisando por que no subio la cantidad.
+             */
+            if (!agregado) {
+                _mensaje.value = "Ya tienes todo el stock disponible en el carrito"
+            }
 
             _comprando.value = false
-            _mensaje.value = "Compra realizada. Evitaste " +
-                "${oferta.co2Evitado} kg de CO2"
+            _irAlCarrito.value = true
         }
+    }
+
+    /** La pantalla apaga la bandera despues de navegar. */
+    fun carritoAbierto() {
+        _irAlCarrito.value = false
     }
 
     /** La pantalla llama a esto despues de mostrar el mensaje. */

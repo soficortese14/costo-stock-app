@@ -1,5 +1,6 @@
 package cl.duoc.costostock.ui.views
 
+import androidx.compose.foundation.Image
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,21 +35,27 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import cl.duoc.costostock.data.GeneradorQR
 import cl.duoc.costostock.data.PasarelaPago
 import cl.duoc.costostock.data.ResultadoPago
 import cl.duoc.costostock.navigation.Rutas
@@ -354,10 +362,54 @@ private fun Aprobado(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+
+                Spacer(Modifier.height(12.dp))
+
+                /*
+                 * El QR del codigo, en el momento mismo de la compra.
+                 *
+                 * Va sobre una Surface blanca fija y no sobre el color
+                 * del tema: un lector necesita contraste maximo y el
+                 * padding blanco es la zona de silencio que pide el
+                 * estandar, no decoracion. Es el mismo criterio que en
+                 * VouchersScreen.
+                 *
+                 * Si ZXing no logra codificarlo, el codigo en texto de
+                 * mas abajo sigue sirviendo y la pantalla no se cae.
+                 */
+                val qr = remember(resultado.codigoOrden) {
+                    GeneradorQR.generar(resultado.codigoOrden)
+                }
+
+                if (qr != null) {
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Image(
+                            bitmap = qr,
+                            contentDescription =
+                                "Codigo QR del retiro ${resultado.codigoOrden}",
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(160.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                /*
+                 * Monospace y letras separadas: el codigo tambien se
+                 * dicta en voz alta o se escribe a mano, y asi no se
+                 * confunden caracteres parecidos.
+                 */
                 Text(
                     text = resultado.codigoOrden,
                     style = MaterialTheme.typography.headlineSmall,
+                    fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }

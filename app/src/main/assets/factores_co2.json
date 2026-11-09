@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "descripcion": "Factores de emision por categoria, en kg de CO2 equivalente evitados por cada kilo de producto rescatado.",
+  "modelo": "CO2 evitado = peso x (produccion + disposicion). Produccion son las emisiones ya gastadas en producir el alimento, que se pierden si termina en la basura. Disposicion es el metano que habria generado al descomponerse en un relleno sanitario.",
+  "fuentes": [
+    "Poore, J. y Nemecek, T. (2018). Reducing food's environmental impacts through producers and consumers. Science 360(6392), 987-992. Metaanalisis de ~38.700 granjas en 119 paises.",
+    "ReFED y Quantis (2020). Greenhouse Gas Emissions of Food Waste. Consistente con el modelo WARM de la EPA de Estados Unidos: 0,6 kg CO2e por kilo de alimento desviado del relleno sanitario."
+  ],
+  "factores": [
+    {
+      "categoria": "Abarrotes",
+      "produccion": 1.4,
+      "disposicion": 0.6,
+      "fuente": "Poore y Nemecek 2018: trigo y centeno 1,57 - otras verduras 0,53 - papas 0,46"
+    },
+    {
+      "categoria": "Refrigerados",
+      "produccion": 3.2,
+      "disposicion": 0.6,
+      "fuente": "Poore y Nemecek 2018: leche 3,15 - huevos 4,67"
+    },
+    {
+      "categoria": "Bebidas",
+      "produccion": 2.1,
+      "disposicion": 0.6,
+      "fuente": "LCA de bebidas envasadas, ~2,1 kg CO2e por litro incluyendo el envase"
+    },
+    {
+      "categoria": "Licores",
+      "produccion": 1.8,
+      "disposicion": 0.6,
+      "fuente": "Poore y Nemecek 2018: vino 1,79"
+    },
+    {
+      "categoria": "Hogar",
+      "produccion": 2.8,
+      "disposicion": 0.0,
+      "fuente": "LCA de surfactantes LAS, ~2,8 kg CO2e/kg. Disposicion 0 porque un detergente no genera metano al descomponerse. Es el factor menos firme: no es alimento y no lo cubre Poore y Nemecek."
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.AlmacenImagenes
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.domain.CalculadoraCO2
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +69,16 @@ data class FormularioOferta(
 class PublicarOfertaViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repositorio = OfertaRepository(application)
+
+    /**
+     * La calculadora de CO2, con los factores que esten vigentes.
+     *
+     * Antes la formula y los factores estaban escritos aca adentro, lo
+     * que tenia dos problemas: no se podia probar sin emulador y nadie
+     * mas podia usarlos. Ahora viven en domain/ y los factores vienen
+     * del archivo de datos.
+     */
+    private val calculadora = CalculadoraCO2()
 
     private val _formulario = MutableStateFlow(FormularioOferta())
     val formulario: StateFlow<FormularioOferta> = _formulario
@@ -327,7 +338,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
                 comercio = oferta.comercio,
                 direccion = oferta.direccion,
                 comuna = oferta.comuna,
-                pesoKg = pesoDesdeCo2(oferta.categoria, oferta.co2Evitado),
+                pesoKg = oferta.pesoKg.toString(),
                 imagenUrl = oferta.imagenUrl
             )
         }
@@ -342,13 +353,6 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
     private fun horasRestantes(finVigencia: Long): Int {
         val restante = finVigencia - System.currentTimeMillis()
         return (restante / 3_600_000L).toInt().coerceAtLeast(1)
-    }
-
-    /** Despeja el peso a partir del CO2 guardado y el factor de la categoria. */
-    private fun pesoDesdeCo2(categoria: String, co2: Double): String {
-        val factor = FACTORES_CO2[categoria] ?: 1.0
-        val peso = co2 / factor
-        return ((peso * 10).toInt() / 10.0).toString()
     }
 
     /** Borra la oferta que se esta editando. */
@@ -422,7 +426,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
                 comuna = validado.comuna,
                 latitud = coordenadas.first,
                 longitud = coordenadas.second,
-                co2Evitado = calcularCo2(validado.categoria, peso),
+                pesoKg = peso,
                 imagenUrl = validado.imagenUrl
             )
 
@@ -434,33 +438,31 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    /**
-     * CO2 evitado = peso en kg x factor de emision de la categoria.
-     *
-     * Los factores son referenciales para el prototipo academico. En
-     * produccion saldrian de una tabla en el backend con fuente citada.
-     */
-    private fun calcularCo2(categoria: String, pesoKg: Double): Double {
-        val factor = FACTORES_CO2[categoria] ?: 1.0
-        return (pesoKg * factor * 10).toInt() / 10.0
-    }
-
     /** Vista previa del CO2 mientras el usuario escribe el peso. */
     fun co2Estimado(): Double {
         val f = _formulario.value
         val peso = f.pesoKg.toDoubleOrNull() ?: return 0.0
-        return calcularCo2(f.categoria, peso)
+        return calculadora.calcular(f.categoria, peso)
     }
 
+    /**
+     * La cuenta escrita, para mostrarla bajo la vista previa.
+     *
+     * Ej: "3,0 kg x 2,0 kg CO2e/kg = 6,0 kg CO2e". Antes la pantalla
+     * mostraba solo el resultado y no habia forma de saber de donde
+     * salia ese numero.
+     */
+    fun co2Explicado(): String {
+        val f = _formulario.value
+        val peso = f.pesoKg.toDoubleOrNull() ?: return ""
+        return calculadora.explicacion(f.categoria, peso)
+    }
+
+    /** La fuente del factor que se esta aplicando, para que sea citable. */
+    fun fuenteDelFactor(): String =
+        calculadora.factorDe(_formulario.value.categoria).fuente
+
     companion object {
-        /** Kilos de CO2 evitados por cada kilo de producto rescatado. */
-        private val FACTORES_CO2 = mapOf(
-            "Abarrotes" to 1.1,
-            "Refrigerados" to 2.5,
-            "Bebidas" to 0.8,
-            "Licores" to 1.3,
-            "Hogar" to 0.6
-        )
 
         /** Comunas de la V Region donde opera Costo Stock. */
         val COMUNAS = listOf(

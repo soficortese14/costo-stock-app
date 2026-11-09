@@ -85,6 +85,7 @@ fun DetalleScreen(
     val comprando by viewModel.comprando.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
+    val irAlCarrito by viewModel.irAlCarrito.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
 
@@ -92,6 +93,21 @@ fun DetalleScreen(
     // la llave cambia y se vuelve a ejecutar.
     LaunchedEffect(ofertaId) {
         viewModel.cargar(ofertaId)
+    }
+
+    /*
+     * Comprar deja el producto en el carrito y lleva al checkout.
+     *
+     * La navegacion ocurre aca y no en el ViewModel porque el
+     * ViewModel no conoce el NavController. La bandera se apaga
+     * despues de navegar para que volver atras no rebote de nuevo al
+     * carrito.
+     */
+    LaunchedEffect(irAlCarrito) {
+        if (irAlCarrito) {
+            viewModel.carritoAbierto()
+            navController.navigate(Rutas.CARRITO)
+        }
     }
 
     // Muestra el mensaje de compra y lo limpia, para que no reaparezca
@@ -148,7 +164,7 @@ fun DetalleScreen(
                 oferta = actual.oferta,
                 ahora = ahora,
                 comprando = comprando,
-                onComprar = { viewModel.comprar(actual.oferta) },
+                onComprar = { viewModel.comprarAhora(actual.oferta) },
                 onAgregarCarrito = { viewModel.agregarAlCarrito(actual.oferta) },
                 modifier = Modifier.padding(padding)
             )
@@ -262,7 +278,7 @@ private fun ContenidoDetalle(
 
                 Spacer(Modifier.height(16.dp))
 
-                TarjetaImpacto(kilos = oferta.co2Evitado)
+                TarjetaImpacto(kilos = oferta.co2Evitado())
 
                 Spacer(Modifier.height(16.dp))
             }

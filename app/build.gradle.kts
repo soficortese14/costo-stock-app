@@ -66,6 +66,9 @@ dependencies {
     // Carga de imagenes desde URL
     implementation(libs.coil.compose)
 
+    // Genera el QR del código de retiro (Java puro, sin cámara ni permisos)
+    implementation(libs.zxing.core)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

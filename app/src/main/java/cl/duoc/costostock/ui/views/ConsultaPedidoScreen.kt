@@ -251,8 +251,9 @@ private fun DetallePedido(pedido: PedidoEntity, ahora: Long) {
             }
 
             Text(
-                text = "${pedido.unidades} unidades · tarjeta terminada en " +
-                    pedido.ultimosCuatro,
+                text = (if (pedido.unidades == 1) "1 unidad"
+                else "${pedido.unidades} unidades") +
+                    " · tarjeta terminada en ${pedido.ultimosCuatro}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

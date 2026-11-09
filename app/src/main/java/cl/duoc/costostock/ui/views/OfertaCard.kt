@@ -126,7 +126,7 @@ fun OfertaCard(
 
                 Spacer(Modifier.height(8.dp))
 
-                BadgeCO2(kilos = oferta.co2Evitado)
+                BadgeCO2(kilos = oferta.co2Evitado())
             }
         }
     }
