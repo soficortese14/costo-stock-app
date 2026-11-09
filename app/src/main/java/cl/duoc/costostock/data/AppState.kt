@@ -2,7 +2,7 @@ package cl.duoc.costostock.data
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.mutableStateListOf
-import cl.duoc.costostock.model.Comprador
+import cl.duoc.costostock.data.model.Comprador
 
 class AppState {
     val compradores = mutableStateListOf<Comprador>()

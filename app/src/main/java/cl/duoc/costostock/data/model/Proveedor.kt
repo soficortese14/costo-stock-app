@@ -1,8 +1,10 @@
-package cl.duoc.costostock.model
+package cl.duoc.costostock.data.model
 
 data class Proveedor(
-    val email: String,
+
     val rut: String,
+    val nombre: String,
+    val email: String,
     val password: String,
     val razonSocial: String,
     val giro: String,

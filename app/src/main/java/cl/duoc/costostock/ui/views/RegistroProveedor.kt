@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AssignmentInd
 import androidx.compose.material.icons.filled.Email
@@ -61,6 +63,7 @@ fun RegistroProveedor(
     navController: NavController,
     appStateProveedor: AppStateProveedor
 ) {
+    var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var rut by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -109,14 +112,13 @@ fun RegistroProveedor(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp)
-                .verticalScroll(rememberScrollState()), // Se agregó scroll por la cantidad de campos
+                .verticalScroll(rememberScrollState()), // Scroll, sirve por la cantidad de campos
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Cabecera igual a tu RegistroScreen
             Text(
                 text = "Costo Stock",
                 style = MaterialTheme.typography.displayMedium.copy(
@@ -137,6 +139,28 @@ fun RegistroProveedor(
             Spacer(modifier = Modifier.height(32.dp))
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre Completo") },
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.AccountBox,
+                        contentDescription = "Nombre"
+                    )
+                }
+            )
+
+            Spacer(Modifier.height(8.dp))
+
 
             OutlinedTextField(
                 value = email,
@@ -275,7 +299,13 @@ fun RegistroProveedor(
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                     focusedContainerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalance,
+                        contentDescription = "Nombre de empresa"
+                    )
+                }
             )
 
             Spacer(Modifier.height(8.dp))
@@ -332,7 +362,8 @@ fun RegistroProveedor(
                 onClick = {
                     // Reglas de negocio
                     when {
-                        email.isBlank() ||rut.isBlank() || password.isBlank() || confirmarPassword.isBlank() || razonSocial.isBlank()
+                        nombre.isBlank()|| email.isBlank() ||rut.isBlank() || password.isBlank()
+                                || confirmarPassword.isBlank() || razonSocial.isBlank()
                                 || giro.isBlank() || comuna.isBlank() || telefono.isBlank() ->
                             error = "Todos los campos son obligatorios"
                         !esEmailValido(email) ->
@@ -345,7 +376,8 @@ fun RegistroProveedor(
                             error = "El teléfono debe tener 9 dígitos y partir con 9"
                         password != confirmarPassword ->
                             error = "Las contraseñas no coinciden"
-                        !appStateProveedor.registrarProveedor(rut.trim(), password, razonSocial,giro,comuna,telefono) ->
+                        !appStateProveedor.registrarProveedor(rut.trim(),
+                            password, razonSocial,giro,comuna,telefono) ->
                             error = "El usuario ya existe"
                         else -> {
                             error = ""

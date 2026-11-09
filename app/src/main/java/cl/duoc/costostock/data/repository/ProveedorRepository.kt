@@ -1,6 +1,6 @@
 package cl.duoc.costostock.data.repository
 
-import cl.duoc.costostock.model.Proveedor
+import cl.duoc.costostock.data.model.Proveedor
 
 class UsuarioRepository(private val api: ApiService = RetrofitClient.api) {
 

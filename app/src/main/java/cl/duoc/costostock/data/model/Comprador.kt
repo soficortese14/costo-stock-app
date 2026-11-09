@@ -1,4 +1,4 @@
-package cl.duoc.costostock.model
+package cl.duoc.costostock.data.model
 
 import android.graphics.Bitmap
 

@@ -1,13 +1,13 @@
 package cl.duoc.costostock.data.repository
 
-import cl.duoc.costostock.model.Comprador
-import cl.duoc.costostock.model.Proveedor
+import cl.duoc.costostock.data.model.Comprador
+import cl.duoc.costostock.data.model.Proveedor
 import retrofit2.http.GET
 
 interface ApiService {
-    /* Después iran los demás */
+    /* Después van a ir los demás */
 
-    @GET("proveedor")
+    @GET("proveedores")
     suspend fun getProveedor(): List<Proveedor>
 
     @GET("comprador")
