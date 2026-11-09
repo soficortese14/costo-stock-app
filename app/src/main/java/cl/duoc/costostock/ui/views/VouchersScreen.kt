@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -29,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -323,6 +325,29 @@ private fun TarjetaVoucher(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            /*
+             * Boton explicito al seguimiento.
+             *
+             * La tarjeta entera ya es tocable y lleva al mismo lugar, pero
+             * eso no se ve: nada en pantalla avisa que el QR es un boton.
+             * Con el boton queda claro que desde aca se llega al estado, y
+             * el voucher deja de parecer una pantalla sin salida.
+             */
+            OutlinedButton(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.LocalShipping,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Ver estado del pedido", fontWeight = FontWeight.SemiBold)
             }
         }
     }
