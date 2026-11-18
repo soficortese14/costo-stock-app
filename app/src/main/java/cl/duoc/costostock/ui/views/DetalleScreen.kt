@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
@@ -85,6 +87,7 @@ fun DetalleScreen(
     val comprando by viewModel.comprando.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
+    val esFavorito by viewModel.esFavorito.collectAsState()
     val irAlCarrito by viewModel.irAlCarrito.collectAsState()
 
     val snackbar = remember { SnackbarHostState() }
@@ -128,6 +131,23 @@ fun DetalleScreen(
                 ),
                 title = { Text("Detalle") },
                 actions = {
+                    /*
+                     * Guardar es del comprador: un proveedor no guarda
+                     * sus propias publicaciones. Por eso el corazon y el
+                     * lapiz de editar son excluyentes segun el perfil.
+                     */
+                    if (perfil != Perfil.PROVEEDOR) {
+                        IconButton(onClick = { viewModel.alternarFavorito(ofertaId) }) {
+                            Icon(
+                                imageVector = if (esFavorito) Icons.Filled.Favorite
+                                else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (esFavorito) "Quitar de favoritos"
+                                else "Guardar en favoritos",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+
                     // Editar es una accion del proveedor, igual que publicar.
                     if (perfil == Perfil.PROVEEDOR) {
                         IconButton(

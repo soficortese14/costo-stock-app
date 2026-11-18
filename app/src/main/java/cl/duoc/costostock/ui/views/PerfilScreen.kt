@@ -158,27 +158,15 @@ fun PerfilScreen(
             Spacer(Modifier.height(28.dp))
 
             /*
-             * Consultar un pedido no necesita sesion: el codigo de retiro
-             * es la credencial. Va antes del login a proposito, porque es
-             * lo que mas busca alguien que acaba de comprar.
+             * Mis vouchers reemplazo al antiguo boton "Consultar un
+             * pedido", que hacia lo mismo por un camino peor: obligaba a
+             * escribir de memoria un codigo que la app ya tenia guardado.
+             * Desde el voucher se llega al estado del pedido en un toque.
+             *
+             * Para quien recibio el codigo por fuera y no tiene sus
+             * compras en este telefono, la busqueda por codigo sigue
+             * existiendo: esta en el estado vacio de Mis vouchers.
              */
-            OutlinedButton(
-                onClick = { navController.navigate(Rutas.consultaPedido()) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Icon(
-                    Icons.Filled.ConfirmationNumber,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-                Text("Consultar un pedido", fontWeight = FontWeight.SemiBold)
-            }
-
-            Spacer(Modifier.height(12.dp))
-
             /*
              * Vouchers (CO-13).
              *

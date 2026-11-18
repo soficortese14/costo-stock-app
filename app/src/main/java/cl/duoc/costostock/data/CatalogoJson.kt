@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import cl.duoc.costostock.data.room.OfertaEntity
 import cl.duoc.costostock.domain.CalculadoraCO2
+import cl.duoc.costostock.domain.Comuna
+import cl.duoc.costostock.domain.ConfiguracionApp
 import cl.duoc.costostock.domain.FactorCO2
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
@@ -54,6 +56,21 @@ private data class FactorJson(
     val fuente: String = ""
 )
 
+private data class ComunaJson(
+    val nombre: String = "",
+    val latitud: Double = 0.0,
+    val longitud: Double = 0.0
+)
+
+private data class ConfigJsonDto(
+    val version: Int = 0,
+    val comisionPorcentaje: Int = 0,
+    val radioMinimoKm: Int = 1,
+    val radioMaximoKm: Int = 30,
+    val radioPorDefectoKm: Int = 15,
+    val comunas: List<ComunaJson> = emptyList()
+)
+
 private data class FactoresJsonDto(
     val version: Int = 0,
     val factores: List<FactorJson> = emptyList()
@@ -96,15 +113,14 @@ class CatalogoJson(private val context: Context) {
     /**
      * La tabla de factores del archivo.
      *
-     * Si no se puede leer, devuelve la tabla de referencia que trae
-     * CalculadoraCO2 en el código. El cálculo de CO₂ nunca queda sin
-     * factores: es preferible usar los de respaldo a mostrar cero.
+     * Devuelve vacio si no se puede leer. Esa es la unica fuente de los
+     * factores: ya no hay una copia en el codigo, justamente para que no
+     * puedan contradecirse. Si queda vacia, CalculadoraCO2 aplica su
+     * factor generico y la app sigue calculando algo razonable.
      */
     fun cargarFactores(): Map<String, FactorCO2> {
         val dto = leer(ARCHIVO_FACTORES, FactoresJsonDto::class.java)
-            ?: return CalculadoraCO2.FACTORES_REFERENCIA
-
-        if (dto.factores.isEmpty()) return CalculadoraCO2.FACTORES_REFERENCIA
+            ?: return emptyMap()
 
         return dto.factores.associate { factor ->
             factor.categoria to FactorCO2(
@@ -113,6 +129,31 @@ class CatalogoJson(private val context: Context) {
                 fuente = factor.fuente
             )
         }
+    }
+
+    /**
+     * Los parametros de negocio del archivo.
+     *
+     * Si no se puede leer devuelve la configuracion minima, que no es
+     * una copia del archivo: tiene la comision en 0 y la lista de
+     * comunas vacia. Es a proposito. Cobrar una comision inventada
+     * porque no se pudo leer un archivo seria peor que no cobrarla, y
+     * una lista de comunas vacia se nota de inmediato, mientras que una
+     * lista equivocada podria pasar desapercibida.
+     */
+    fun cargarConfiguracion(): ConfiguracionApp {
+        val dto = leer(ARCHIVO_CONFIG, ConfigJsonDto::class.java)
+            ?: return ConfiguracionApp.MINIMA
+
+        return ConfiguracionApp(
+            comisionPorcentaje = dto.comisionPorcentaje,
+            radioMinimoKm = dto.radioMinimoKm,
+            radioMaximoKm = dto.radioMaximoKm,
+            radioPorDefectoKm = dto.radioPorDefectoKm,
+            comunas = dto.comunas.map {
+                Comuna(it.nombre, it.latitud, it.longitud)
+            }
+        )
     }
 
     /** Una calculadora que usa los factores del archivo. */
@@ -177,6 +218,7 @@ class CatalogoJson(private val context: Context) {
         const val TAG = "CatalogoJson"
         const val ARCHIVO_CATALOGO = "catalogo.json"
         const val ARCHIVO_FACTORES = "factores_co2.json"
+        const val ARCHIVO_CONFIG = "config.json"
         const val MINUTO = 60_000L
         const val ASSETS = "file:///android_asset"
     }

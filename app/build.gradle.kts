@@ -2,6 +2,74 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    // Mide que porcentaje del codigo ejecutan las pruebas
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+/**
+ * Informe de cobertura de las pruebas unitarias.
+ *
+ * Se corre con:  ./gradlew jacocoTestReport
+ * El resultado queda en: app/build/reports/jacoco/jacocoTestReport/html/index.html
+ *
+ * Mide la LOGICA, no la interfaz. Quedan fuera a proposito:
+ *
+ *  - ui/views: son Composables. Una prueba unitaria no los puede
+ *    ejecutar; eso se hace con pruebas instrumentadas, que corren en un
+ *    emulador. Incluirlos aqui solo diluiria el numero sin decir nada
+ *    sobre la calidad de las pruebas.
+ *
+ *  - Lo generado: Room escribe los *_Impl, Compose los
+ *    ComposableSingletons y las lambdas. Nadie escribio ese codigo, asi
+ *    que medir si esta probado no tiene sentido.
+ */
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "Cobertura de las pruebas unitarias sobre la logica de la app"
+
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
+
+    val generadoOInterfaz = listOf(
+        "**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*",
+        "**/*_Impl*.*",                 // Room
+        "**/*_Factory*.*",
+        "**/ComposableSingletons*.*",   // Compose
+        "**/*ComposableLambda*.*",
+        "**/*\$\$inlined*.*",
+        "**/ui/views/**",               // Composables
+        // Mismo caso: el login y el registro de proveedor declaran el
+        // paquete ui.ui.view aunque viven en ui/views. Tambien son
+        // Composables, asi que tampoco cuentan.
+        "**/ui/ui/view/**",
+        "**/ui/theme/**",
+        "**/MainActivity*.*",           // punto de entrada, no logica
+        "**/navigation/**",             // declaracion de rutas, no logica
+    )
+
+    classDirectories.setFrom(
+        files(
+            fileTree(layout.buildDirectory) {
+                include(
+                    "intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/**/*.class",
+                    "tmp/kotlin-classes/debug/**/*.class"
+                )
+                exclude(generadoOInterfaz)
+            }
+        )
+    )
+
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) { include("**/testDebugUnitTest.exec") }
+    )
 }
 
 android {
@@ -70,6 +138,13 @@ dependencies {
     implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
+    // Dobles de prueba: permiten probar ViewModel y Repository sin Room
+    // ni Android, que es lo que exige la pauta de la evaluacion.
+    testImplementation(libs.mockk)
+    // runTest y TestDispatcher: ejecutan corrutinas de forma determinista
+    testImplementation(libs.kotlinx.coroutines.test)
+    // Para verificar lo que emite un Flow paso a paso
+    testImplementation(libs.turbine)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

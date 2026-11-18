@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
@@ -88,6 +90,8 @@ fun OfertasScreen(
     val ahora by viewModel.ahora.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
     val orden by viewModel.orden.collectAsState()
+    val idsFavoritos by viewModel.idsFavoritos.collectAsState()
+    val soloFavoritos by viewModel.soloFavoritos.collectAsState()
     val unidadesCarrito by viewModel.unidadesCarrito.collectAsState()
 
     // Solo hay distancia que mostrar si se conoce donde esta el usuario.
@@ -227,6 +231,9 @@ fun OfertasScreen(
 
             FilaCategorias(
                 seleccionada = categoria,
+                soloFavoritos = soloFavoritos,
+                cuantosFavoritos = idsFavoritos.size,
+                onAlternarFavoritos = { viewModel.alternarSoloFavoritos() },
                 onSeleccionar = { viewModel.cambiarCategoria(it) }
             )
 
@@ -270,6 +277,10 @@ fun OfertasScreen(
                                     oferta.latitud,
                                     oferta.longitud
                                 )
+                            },
+                            esFavorito = idsFavoritos.contains(oferta.id),
+                            onAlternarFavorito = {
+                                viewModel.alternarFavorito(oferta.id)
                             },
                             onClick = {
                                 navController.navigate(Rutas.detalle(oferta.id))
@@ -321,12 +332,50 @@ private fun CampoBusqueda(
 @Composable
 private fun FilaCategorias(
     seleccionada: String,
+    soloFavoritos: Boolean,
+    cuantosFavoritos: Int,
+    onAlternarFavoritos: () -> Unit,
     onSeleccionar: (String) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        /*
+         * El chip de favoritos va primero y es un interruptor aparte,
+         * no una categoria mas.
+         *
+         * La diferencia importa: las categorias son excluyentes entre
+         * si -o Abarrotes o Bebidas- mientras que favoritos se combina
+         * con cualquiera de ellas. Meterlo en la misma lista obligaria
+         * a elegir entre ver tus guardados o filtrar por categoria.
+         */
+        item {
+            FilterChip(
+                selected = soloFavoritos,
+                onClick = onAlternarFavoritos,
+                label = {
+                    Text(
+                        if (cuantosFavoritos > 0) "Favoritos ($cuantosFavoritos)"
+                        else "Favoritos"
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (soloFavoritos) Icons.Filled.Favorite
+                        else Icons.Filled.FavoriteBorder,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.error,
+                    selectedLabelColor = MaterialTheme.colorScheme.onError,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onError
+                )
+            )
+        }
+
         items(OfertaRepository.CATEGORIAS) { categoria ->
             FilterChip(
                 selected = categoria == seleccionada,

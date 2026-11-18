@@ -34,6 +34,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -126,6 +127,9 @@ fun VouchersScreen(
 
                 is EstadoVouchers.Vacio -> VouchersVacio(
                     onVerOfertas = { navController.navigate(Rutas.OFERTAS) },
+                    onBuscarPorCodigo = {
+                        navController.navigate(Rutas.consultaPedido())
+                    },
                     modifier = Modifier.align(Alignment.Center)
                 )
 
@@ -153,10 +157,20 @@ fun VouchersScreen(
     }
 }
 
-/** Nunca se ha comprado nada. */
+/**
+ * Nunca se ha comprado nada en este telefono.
+ *
+ * Lleva dos salidas y no una. La segunda existe porque el codigo de
+ * retiro es la credencial del pedido y no hace falta sesion para
+ * consultarlo: quien lo recibio por correo, o reinstalo la app, no
+ * tiene sus compras guardadas aca pero igual tiene derecho a ver su
+ * pedido. Antes esa puerta estaba en Perfil, duplicando lo que esta
+ * pantalla ya hace; aca queda en el unico lugar donde hace falta.
+ */
 @Composable
 private fun VouchersVacio(
     onVerOfertas: () -> Unit,
+    onBuscarPorCodigo: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -186,6 +200,13 @@ private fun VouchersVacio(
         Spacer(Modifier.height(20.dp))
         Button(onClick = onVerOfertas) {
             Text("Ver ofertas")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Secundario a proposito: es el caso raro, no el habitual
+        TextButton(onClick = onBuscarPorCodigo) {
+            Text("Ya tengo un codigo de retiro")
         }
     }
 }

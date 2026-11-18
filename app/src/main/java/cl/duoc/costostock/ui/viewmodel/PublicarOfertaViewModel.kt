@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.AlmacenImagenes
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.domain.CalculadoraCO2
+import cl.duoc.costostock.domain.Configuracion
+import cl.duoc.costostock.domain.FactoresCO2
 import cl.duoc.costostock.data.room.OfertaEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -408,7 +410,7 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
 
             val peso = validado.pesoKg.toDoubleOrNull() ?: 0.0
             val horas = validado.horasVigencia.toIntOrNull() ?: 4
-            val coordenadas = COORDENADAS[validado.comuna] ?: (-33.0245 to -71.5518)
+            val coordenadas = Configuracion.vigente().coordenadasDe(validado.comuna)
 
             val oferta = OfertaEntity(
                 // Con id 0, Room genera uno nuevo. Con el id de una oferta
@@ -464,24 +466,26 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
 
     companion object {
 
-        /** Comunas de la V Region donde opera Costo Stock. */
-        val COMUNAS = listOf(
-            "Vina del Mar", "Valparaiso", "Quilpue",
-            "Villa Alemana", "Quillota", "Concon", "Casablanca"
-        )
+        /*
+         * Ni las comunas ni las categorias se escriben aca.
+         *
+         * Las comunas, con sus coordenadas, salen de
+         * assets/config.json: dependen de donde opere el cliente.
+         *
+         * Las categorias salen de las llaves de
+         * assets/factores_co2.json, porque toda categoria necesita un
+         * factor de CO2 para existir. Derivarlas de ahi hace imposible
+         * agregar una sin darle su factor, que es lo que antes pasaba
+         * en silencio aplicando el generico.
+         *
+         * Son get() y no val a secas porque los archivos se leen al
+         * arrancar la app, despues de que esta clase se carga: con un
+         * val quedarian congeladas vacias.
+         */
+        val COMUNAS: List<String>
+            get() = Configuracion.vigente().nombresDeComunas
 
-        private val COORDENADAS = mapOf(
-            "Vina del Mar" to (-33.0245 to -71.5518),
-            "Valparaiso" to (-33.0472 to -71.6127),
-            "Quilpue" to (-33.0472 to -71.4420),
-            "Villa Alemana" to (-33.0423 to -71.3733),
-            "Quillota" to (-32.8805 to -71.2489),
-            "Concon" to (-32.9220 to -71.5189),
-            "Casablanca" to (-33.3194 to -71.4103)
-        )
-
-        val CATEGORIAS = listOf(
-            "Abarrotes", "Refrigerados", "Bebidas", "Licores", "Hogar"
-        )
+        val CATEGORIAS: List<String>
+            get() = FactoresCO2.categorias()
     }
 }
