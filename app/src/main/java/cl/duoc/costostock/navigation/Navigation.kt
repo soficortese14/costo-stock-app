@@ -121,8 +121,21 @@ fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateP
             RegistroProveedor(navController, appStateProveedor)
         }
 
-        composable(Rutas.OFERTAS) {
-            OfertasScreen(navController)
+        composable(
+            route = Rutas.OFERTAS_CON_FILTRO,
+            arguments = listOf(
+                navArgument(Rutas.ARG_SOLO_FAVORITOS) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { entrada ->
+            OfertasScreen(
+                navController = navController,
+                soloFavoritosInicial =
+                    entrada.arguments?.getString(Rutas.ARG_SOLO_FAVORITOS) == "true"
+            )
         }
 
         composable(Rutas.PERFIL) {

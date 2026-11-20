@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "descripcion": "Parametros de negocio de Costo Stock SpA. Salen de la reunion con el cliente, no son decisiones tecnicas: por eso viven aca y no en el codigo.",
+  "comisionPorcentaje": 8,
+  "notaComision": "Comision de plataforma que se suma al precio final y se desglosa en el checkout. En produccion vendria del backend, porque cambia por volumen de ventas.",
+  "radioMinimoKm": 1,
+  "radioMaximoKm": 30,
+  "radioPorDefectoKm": 15,
+  "notaRadio": "Cobertura V Region. El maximo de 30 km lo fijo el cliente: por eso Quillota (32 km) y Casablanca (35 km) no aparecen desde Vina del Mar.",
+  "comunas": [
+    { "nombre": "Vina del Mar",  "latitud": -33.0245, "longitud": -71.5518 },
+    { "nombre": "Valparaiso",    "latitud": -33.0472, "longitud": -71.6127 },
+    { "nombre": "Quilpue",       "latitud": -33.0472, "longitud": -71.4420 },
+    { "nombre": "Villa Alemana", "latitud": -33.0423, "longitud": -71.3733 },
+    { "nombre": "Quillota",      "latitud": -32.8805, "longitud": -71.2489 },
+    { "nombre": "Concon",        "latitud": -32.9220, "longitud": -71.5189 },
+    { "nombre": "Casablanca",    "latitud": -33.3194, "longitud": -71.4103 }
+  ]
+}

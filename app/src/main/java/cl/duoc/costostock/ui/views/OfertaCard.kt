@@ -36,6 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material3.IconButton
 import coil.compose.AsyncImage
 import cl.duoc.costostock.data.room.OfertaEntity
 import cl.duoc.costostock.ui.theme.TerracotaTexto
@@ -55,6 +59,10 @@ fun OfertaCard(
     ahora: Long,
     /** Distancia hasta el punto de retiro, o null si no hay ubicacion. */
     distanciaKm: Double? = null,
+    /** Si esta guardada en favoritos. Decide si el corazon va relleno. */
+    esFavorito: Boolean = false,
+    /** null oculta el corazon: el proveedor no guarda sus propias ofertas. */
+    onAlternarFavorito: (() -> Unit)? = null,
     onClick: () -> Unit = {}
 ) {
     val vigente = oferta.estaVigente(ahora)
@@ -70,7 +78,12 @@ fun OfertaCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            ImagenConTag(oferta = oferta, vigente = vigente)
+            ImagenConTag(
+                oferta = oferta,
+                vigente = vigente,
+                esFavorito = esFavorito,
+                onAlternarFavorito = onAlternarFavorito
+            )
 
             Column(modifier = Modifier.padding(12.dp)) {
 
@@ -132,9 +145,14 @@ fun OfertaCard(
     }
 }
 
-/** Imagen del producto con el tag de descuento encima. */
+/** Imagen del producto, con el tag de descuento y el corazon encima. */
 @Composable
-private fun ImagenConTag(oferta: OfertaEntity, vigente: Boolean) {
+private fun ImagenConTag(
+    oferta: OfertaEntity,
+    vigente: Boolean,
+    esFavorito: Boolean,
+    onAlternarFavorito: (() -> Unit)?
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -165,6 +183,39 @@ private fun ImagenConTag(oferta: OfertaEntity, vigente: Boolean) {
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onError
+                )
+            }
+        }
+
+        /*
+         * El corazon va arriba a la derecha, en la esquina opuesta al
+         * tag de descuento, para que nunca se tapen.
+         *
+         * Lleva un circulo semitransparente detras porque se dibuja
+         * sobre la foto del producto: sin ese fondo, un corazon blanco
+         * sobre una imagen clara desaparece.
+         */
+        if (onAlternarFavorito != null) {
+            IconButton(
+                onClick = onAlternarFavorito,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.28f))
+                    .size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (esFavorito) Icons.Filled.Favorite
+                    else Icons.Filled.FavoriteBorder,
+                    // El texto cambia con el estado: un lector de
+                    // pantalla tiene que poder anunciar que hace el
+                    // boton ahora, no como se llama.
+                    contentDescription = if (esFavorito) "Quitar de favoritos"
+                    else "Guardar en favoritos",
+                    tint = if (esFavorito) MaterialTheme.colorScheme.error
+                    else Color.White,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

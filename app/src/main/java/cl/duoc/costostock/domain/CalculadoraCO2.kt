@@ -4,19 +4,10 @@ import java.util.Locale
 import kotlin.math.round
 
 /**
- * Cuánto CO₂ se evita al rescatar un kilo de una categoría.
+ * Cuanto CO₂ se evita al rescatar un kilo de una categoría.
  *
  * Son dos componentes y no uno, porque rescatar un producto evita dos
  * cosas distintas:
- *
- *  - **producción**: las emisiones que ya se gastaron en producir ese
- *    alimento y que se perderían si termina en la basura. Es el número
- *    grande y el que varía por categoría.
- *
- *  - **disposición**: el metano que ese alimento habría generado al
- *    descomponerse en un relleno sanitario. No depende de qué producto
- *    sea, sino de que sea orgánico.
- *
  * @param produccion kg CO₂e por kg de producto, de la fase productiva
  * @param disposicion kg CO₂e por kg evitados al no ir al relleno
  * @param fuente de dónde sale el número, para poder defenderlo
@@ -33,12 +24,6 @@ data class FactorCO2(
 
 /**
  * Calcula el CO₂ evitado de una oferta.
- *
- * Es Kotlin puro, sin nada de Android: por eso se puede probar con
- * JUnit normal y no necesita emulador. Antes esta fórmula vivía dentro
- * de PublicarOfertaViewModel, donde no se podía probar ni reutilizar, y
- * los factores eran un mapa privado sin ninguna fuente citada.
- *
  * La tabla de factores se recibe por constructor en vez de estar fija
  * adentro. Así el día que los factores vengan de un archivo de datos o
  * de la API, se le pasan y la clase no cambia. Por defecto usa la tabla
@@ -54,94 +39,36 @@ class CalculadoraCO2(
 
     /**
      * Kilos de CO₂ evitados al rescatar [pesoKg] de [categoria].
-     *
-     * Un peso que no tiene sentido devuelve 0 y no un número negativo:
-     * la pantalla muestra este valor como un logro ambiental y un
-     * "-2,4 kg evitados" no significa nada.
      */
+
+    //calculo de co2
     fun calcular(categoria: String, pesoKg: Double): Double {
         if (pesoKg <= 0 || pesoKg.isNaN()) return 0.0
         return redondear(pesoKg * factorDe(categoria).total)
     }
 
-    /**
-     * La misma cuenta, escrita para que se vea en pantalla.
-     *
-     * Ejemplo: "2,0 kg × 3,8 kg CO₂e/kg = 7,6 kg CO₂e"
-     *
-     * Existe porque el número solo no se explica: mostrando la
-     * multiplicación queda claro que sale de un cálculo y no de un
-     * valor escrito a mano.
-     */
     fun explicacion(categoria: String, pesoKg: Double): String {
         val factor = factorDe(categoria)
         val resultado = calcular(categoria, pesoKg)
         return "${decimal(pesoKg)} kg × ${decimal(factor.total)} kg CO₂e/kg " +
             "= ${decimal(resultado)} kg CO₂e"
     }
-
+    // El unico numero de negocio que queda en Kotlin es el generico de
+    // emergencia. Los factores reales viven en assets/factores_co2.json.
     companion object {
-
-        /**
-         * Metano evitado al no mandar un kilo de alimento al relleno
-         * sanitario.
-         *
-         * 0,6 kg CO₂e/kg, de la metodología de ReFED y Quantis (2020),
-         * coherente con el modelo WARM de la EPA de Estados Unidos.
-         *
-         * Solo aplica a alimentos: un detergente no genera metano al
-         * descomponerse, por eso la categoría Hogar lleva 0.
-         */
         const val DISPOSICION_ALIMENTO = 0.6
-
         /**
-         * Factores de referencia por categoría.
+         * El unico factor escrito en Kotlin, y es deliberado.
          *
-         * Los de alimentos salen de Poore & Nemecek (2018), el
-         * metaanálisis publicado en Science sobre ~38.700 granjas en
-         * 119 países, que es la fuente estándar de huella de carbono de
-         * alimentos. Cada categoría de la app agrupa varios productos,
-         * así que se toma el representativo que más pesa en ella.
-         */
-        val FACTORES_REFERENCIA: Map<String, FactorCO2> = mapOf(
-            "Abarrotes" to FactorCO2(
-                produccion = 1.4,
-                disposicion = DISPOSICION_ALIMENTO,
-                fuente = "Poore & Nemecek 2018: trigo y centeno 1,57 · " +
-                    "otras verduras 0,53 · papas 0,46"
-            ),
-            "Refrigerados" to FactorCO2(
-                produccion = 3.2,
-                disposicion = DISPOSICION_ALIMENTO,
-                fuente = "Poore & Nemecek 2018: leche 3,15 · huevos 4,67"
-            ),
-            "Bebidas" to FactorCO2(
-                produccion = 2.1,
-                disposicion = DISPOSICION_ALIMENTO,
-                fuente = "LCA de bebidas envasadas, ~2,1 kg CO₂e por litro " +
-                    "incluyendo el envase"
-            ),
-            "Licores" to FactorCO2(
-                produccion = 1.8,
-                disposicion = DISPOSICION_ALIMENTO,
-                fuente = "Poore & Nemecek 2018: vino 1,79"
-            ),
-            "Hogar" to FactorCO2(
-                produccion = 2.8,
-                // Un detergente no se descompone generando metano:
-                // rescatarlo evita producir uno nuevo, nada más.
-                disposicion = 0.0,
-                fuente = "LCA de surfactantes LAS, ~2,8 kg CO₂e/kg. " +
-                    "Es el factor menos firme de la tabla: no es alimento " +
-                    "y no está cubierto por Poore & Nemecek"
-            )
-        )
-
-        /**
-         * Para una categoría que no esté en la tabla.
+         * Los factores reales de cada categoria viven en
+         * assets/factores_co2.json. Antes estaban ademas copiados aca,
+         * o sea los mismos cinco numeros en dos lugares: corregir uno y
+         * olvidar el otro los dejaba contradiciendose sin que nada
+         * avisara.
          *
-         * Se usa el valor más bajo de los alimentos y no un promedio: si
-         * no sabemos qué es, conviene quedarse corto antes que inflar el
+         * Ahora el respaldo es este valor conservador y nada mas. Si la
+         * app llega a usarlo es porque el archivo falta o esta mal
+         * escrito, y ahi conviene quedarse corto antes que inflar el
          * impacto ambiental que la app declara.
          */
         val FACTOR_GENERICO = FactorCO2(
@@ -160,34 +87,45 @@ class CalculadoraCO2(
 }
 
 /**
- * La tabla de factores que está usando la app.
- *
- * Existe para que el cálculo use los factores del archivo de datos sin
+ * esto es la tabla de factores que está usando la app.
+ * Existe para que el calculo use los factores del archivo de datos sin
  * que cada pantalla tenga que ir a buscarlos. La app los carga una vez
  * al arrancar con [usar] y desde ahí cualquier CalculadoraCO2 creada sin
  * argumentos los toma.
  *
- * Mientras nadie la cargue, devuelve la tabla de referencia que está en
- * el código. Por eso los tests, que corren sin app, siguen viendo los
- * valores de referencia y son deterministas.
- *
- * @Volatile porque la escribe el hilo principal al arrancar y la leen
- * las corrutinas que arman las pantallas: sin eso un hilo podría seguir
- * viendo la tabla vieja en su caché.
+ * Arranca vacia: los numeros no estan en el codigo, estan en el
+ * archivo. Mientras nadie la cargue, factorDe() devuelve el generico.
+ * Los tests no dependen de esto porque arman su propia tabla, que es
+ * como debe ser: una prueba no deberia depender de los datos de
+ * produccion.
  */
 object FactoresCO2 {
 
     @Volatile
-    private var tabla: Map<String, FactorCO2> = CalculadoraCO2.FACTORES_REFERENCIA
+    private var tabla: Map<String, FactorCO2> = emptyMap()
 
     fun vigentes(): Map<String, FactorCO2> = tabla
 
     /**
+     * Las categorias que existen en la app.
+     *
+     * Salen de las llaves de la tabla de factores, no de una lista
+     * aparte. Antes habia dos listas escritas a mano, en
+     * OfertaRepository y en PublicarOfertaViewModel, con contenidos
+     * distintos: se podian desincronizar sin que nada avisara.
+     *
+     * Derivarlas de los factores hace imposible agregar una categoria
+     * sin darle su factor de CO2, que es lo que antes pasaba en
+     * silencio aplicando el generico.
+     */
+    fun categorias(): List<String> = tabla.keys.toList()
+
+    /**
      * Reemplaza la tabla por la que viene del archivo de datos.
      *
-     * Una tabla vacía se ignora: si el archivo falta o está mal escrito
-     * es preferible seguir con los factores de referencia antes que
-     * dejar la app calculando cero CO₂ en todas las ofertas.
+     * Una tabla vacia se ignora: si el archivo falta o esta mal escrito
+     * conviene dejar la que ya habia, en vez de borrar la buena y
+     * quedarse sin ninguna.
      */
     fun usar(nuevos: Map<String, FactorCO2>) {
         if (nuevos.isNotEmpty()) tabla = nuevos

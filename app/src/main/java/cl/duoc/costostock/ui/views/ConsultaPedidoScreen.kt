@@ -69,7 +69,20 @@ fun ConsultaPedidoScreen(
     val estado by viewModel.estado.collectAsState()
     val ahora by viewModel.ahora.collectAsState()
 
-    // Si se llega desde el pago, el codigo viene listo y se busca solo
+    /*
+     * Dos modos en una sola pantalla.
+     *
+     * Con codigo (desde el pago o desde un voucher): es el detalle de ESE
+     * pedido, asi que no se muestra la caja de busqueda. Pedir de nuevo
+     * un codigo que la app ya tiene confunde: parece que no lo guardo.
+     *
+     * Sin codigo (desde Perfil): es una busqueda, y ahi la caja es el
+     * punto de la pantalla. Sirve para quien tiene el codigo en un papel
+     * o en un correo y no tiene sesion iniciada.
+     */
+    val llegaConCodigo = !codigoInicial.isNullOrBlank()
+
+    // Si se llega desde el pago o un voucher, el codigo viene listo y se busca solo
     LaunchedEffect(codigoInicial) {
         if (!codigoInicial.isNullOrBlank()) viewModel.buscarDirecto(codigoInicial)
     }
@@ -82,7 +95,12 @@ fun ConsultaPedidoScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                title = { Text("Consulta tu pedido") },
+                title = {
+                    Text(
+                        if (llegaConCodigo) "Estado de tu pedido"
+                        else "Consulta tu pedido"
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
@@ -98,26 +116,28 @@ fun ConsultaPedidoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            CampoTextoValidado(
-                valor = codigo,
-                onValorCambia = { viewModel.cambiarCodigo(it) },
-                etiqueta = "Codigo de retiro",
-                placeholder = "CS-1234-ABCD",
-                iconoInicial = Icons.Filled.ConfirmationNumber,
-                soporte = "Lo recibiste al pagar"
-            )
+            if (!llegaConCodigo) {
+                CampoTextoValidado(
+                    valor = codigo,
+                    onValorCambia = { viewModel.cambiarCodigo(it) },
+                    etiqueta = "Codigo de retiro",
+                    placeholder = "CS-1234-ABCD",
+                    iconoInicial = Icons.Filled.ConfirmationNumber,
+                    soporte = "Lo recibiste al pagar"
+                )
 
-            Button(
-                onClick = { viewModel.buscar() },
-                enabled = codigo.isNotBlank() && estado !is EstadoConsulta.Buscando,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Text("Consultar", fontWeight = FontWeight.SemiBold)
+                Button(
+                    onClick = { viewModel.buscar() },
+                    enabled = codigo.isNotBlank() && estado !is EstadoConsulta.Buscando,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text("Consultar", fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(24.dp))
             }
-
-            Spacer(Modifier.height(24.dp))
 
             when (val actual = estado) {
                 is EstadoConsulta.Inicial -> Unit

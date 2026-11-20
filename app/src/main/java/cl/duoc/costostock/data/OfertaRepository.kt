@@ -3,6 +3,7 @@ package cl.duoc.costostock.data
 import android.content.Context
 import cl.duoc.costostock.data.room.AppDatabase
 import cl.duoc.costostock.data.room.OfertaEntity
+import cl.duoc.costostock.domain.FactoresCO2
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -103,13 +104,19 @@ class OfertaRepository(context: Context) {
         const val CATEGORIA_TODAS = "Todas"
         const val COMUNA_TODAS = "Todas"
 
-        val CATEGORIAS = listOf(
-            CATEGORIA_TODAS,
-            "Abarrotes",
-            "Refrigerados",
-            "Bebidas",
-            "Licores",
-            "Hogar"
-        )
+        /**
+         * Las categorias del filtro del catalogo.
+         *
+         * "Todas" es la pseudo-categoria del filtro, no un tipo de
+         * producto: la pone la interfaz y por eso se agrega aca. El
+         * resto sale de las llaves de assets/factores_co2.json.
+         *
+         * Antes esta lista estaba escrita a mano y ademas duplicada en
+         * PublicarOfertaViewModel, con contenidos distintos: una tenia
+         * "Todas" y la otra no, y agregar una categoria en una sola
+         * dejaba el filtro y el formulario sin coincidir.
+         */
+        val CATEGORIAS: List<String>
+            get() = listOf(CATEGORIA_TODAS) + FactoresCO2.categorias()
     }
 }

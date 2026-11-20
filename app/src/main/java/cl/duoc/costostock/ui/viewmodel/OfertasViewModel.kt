@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.CarritoRepository
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.FavoritoRepository
 import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.data.PreferenciasManager
 import cl.duoc.costostock.data.Ubicacion
@@ -58,6 +59,45 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
 
     private val ubicacionManager = UbicacionManager(application)
     private val repositorio = OfertaRepository(application)
+    private val favoritos = FavoritoRepository(application)
+
+    /**
+     * Ids de las ofertas guardadas, para saber que corazon va relleno.
+     *
+     * Se observan los ids y no las ofertas completas porque la lista de
+     * ofertas ya la tiene esta pantalla: traerlas de nuevo seria pedir
+     * dos veces lo mismo a la base.
+     */
+    val idsFavoritos: StateFlow<Set<Long>> =
+        favoritos.observarIds()
+            .map { it.toSet() }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = emptySet()
+            )
+
+    /** Filtro de "solo favoritos", que es un interruptor y no una lista. */
+    private val _soloFavoritos = MutableStateFlow(false)
+    val soloFavoritos: StateFlow<Boolean> = _soloFavoritos
+
+    fun alternarSoloFavoritos() {
+        _soloFavoritos.value = !_soloFavoritos.value
+    }
+
+    /**
+     * Guarda o quita la oferta de favoritos.
+     *
+     * El estado actual se lee del Set que ya esta en memoria en vez de
+     * volver a consultar la base: la pantalla ya lo sabe, porque es lo
+     * que uso para pintar el corazon.
+     */
+    fun alternarFavorito(ofertaId: Long) {
+        viewModelScope.launch {
+            favoritos.alternar(ofertaId, idsFavoritos.value.contains(ofertaId))
+        }
+    }
+
     private val preferencias = PreferenciasManager(application)
     private val carrito = CarritoRepository(application)
 
@@ -139,9 +179,10 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
         _categoria,
         _busqueda,
         _comuna,
-        _radioKm
-    ) { categoria, texto, comuna, radio ->
-        Filtros(categoria, texto, comuna, radio)
+        _radioKm,
+        _soloFavoritos
+    ) { categoria, texto, comuna, radio, soloFavoritos ->
+        Filtros(categoria, texto, comuna, radio, soloFavoritos)
     }
 
     val ofertas: StateFlow<List<OfertaEntity>> =
@@ -149,9 +190,16 @@ class OfertasViewModel(application: Application) : AndroidViewModel(application)
             filtros,
             _estado,
             _orden,
-            repositorio.observarOfertas()
-        ) { f, estadoUbicacion, ordenActual, todas ->
+            repositorio.observarOfertas(),
+            idsFavoritos
+        ) { f, estadoUbicacion, ordenActual, todas, favoritas ->
             todas
+                /*
+                 * El filtro de favoritos va primero porque es el que mas
+                 * recorta: con el activo, el resto trabaja sobre un
+                 * punado de ofertas en vez de sobre el catalogo entero.
+                 */
+                .filter { !f.soloFavoritos || favoritas.contains(it.id) }
                 .filter {
                     f.categoria == OfertaRepository.CATEGORIA_TODAS ||
                         it.categoria == f.categoria
@@ -272,7 +320,8 @@ private data class Filtros(
     val categoria: String,
     val texto: String,
     val comuna: String,
-    val radioKm: Int
+    val radioKm: Int,
+    val soloFavoritos: Boolean
 )
 
 /**

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.CarritoRepository
+import cl.duoc.costostock.data.FavoritoRepository
 import cl.duoc.costostock.data.OfertaRepository
 import cl.duoc.costostock.data.Perfil
 import cl.duoc.costostock.data.PreferenciasManager
@@ -37,6 +38,22 @@ class DetalleViewModel(application: Application) : AndroidViewModel(application)
     private val repositorio = OfertaRepository(application)
     private val preferencias = PreferenciasManager(application)
     private val carrito = CarritoRepository(application)
+    private val favoritos = FavoritoRepository(application)
+
+    /**
+     * Si esta oferta esta guardada.
+     *
+     * Se expone como StateFlow y no como un simple Boolean porque el
+     * corazon tiene que reaccionar si el estado cambia desde otra
+     * pantalla: el catalogo y el detalle miran la misma tabla.
+     *
+     * Arranca en false y no en "no se todavia": el corazon vacio es el
+     * estado correcto mientras Room responde, y parpadear entre dos
+     * iconos se ve peor que mostrar el vacio unos milisegundos.
+     */
+    val esFavorito: StateFlow<Boolean>
+        get() = _esFavorito
+    private val _esFavorito = MutableStateFlow(false)
 
     /**
      * Perfil con el que se navega. Decide si se ofrece editar la oferta:
@@ -80,10 +97,30 @@ class DetalleViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
+     * Queda escuchando si esta oferta es favorita.
+     *
+     * Se llama desde cargar() y no desde init porque el id llega por la
+     * ruta, despues de construir el ViewModel.
+     */
+    private fun observarFavorito(ofertaId: Long) {
+        viewModelScope.launch {
+            favoritos.esFavorito(ofertaId).collect { _esFavorito.value = it }
+        }
+    }
+
+    /** Guarda o quita la oferta de favoritos. */
+    fun alternarFavorito(ofertaId: Long) {
+        viewModelScope.launch {
+            favoritos.alternar(ofertaId, _esFavorito.value)
+        }
+    }
+
+    /**
      * Carga la oferta. La pantalla la llama una sola vez, con el id
      * que extrajo de la ruta.
      */
     fun cargar(ofertaId: Long) {
+        observarFavorito(ofertaId)
         viewModelScope.launch {
             _estado.value = EstadoDetalle.Cargando
 

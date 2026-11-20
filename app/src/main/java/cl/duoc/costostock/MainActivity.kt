@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
 import cl.duoc.costostock.data.AppStateProveedor
 import cl.duoc.costostock.data.CatalogoJson
+import cl.duoc.costostock.domain.Configuracion
 import cl.duoc.costostock.domain.FactoresCO2
 import cl.duoc.costostock.data.room.AppDatabase
 import cl.duoc.costostock.navigation.AppNavigation
@@ -36,7 +37,9 @@ class MainActivity : ComponentActivity() {
          * el archivo falta o esta mal escrito, FactoresCO2 se queda con
          * la tabla de referencia del codigo y la app sigue calculando.
          */
-        FactoresCO2.usar(CatalogoJson(applicationContext).cargarFactores())
+        val datos = CatalogoJson(applicationContext)
+        FactoresCO2.usar(datos.cargarFactores())
+        Configuracion.usar(datos.cargarConfiguracion())
 
         setContent {
             CostoStockTheme {

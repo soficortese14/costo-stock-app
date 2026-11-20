@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
@@ -158,27 +159,15 @@ fun PerfilScreen(
             Spacer(Modifier.height(28.dp))
 
             /*
-             * Consultar un pedido no necesita sesion: el codigo de retiro
-             * es la credencial. Va antes del login a proposito, porque es
-             * lo que mas busca alguien que acaba de comprar.
+             * Mis vouchers reemplazo al antiguo boton "Consultar un
+             * pedido", que hacia lo mismo por un camino peor: obligaba a
+             * escribir de memoria un codigo que la app ya tenia guardado.
+             * Desde el voucher se llega al estado del pedido en un toque.
+             *
+             * Para quien recibio el codigo por fuera y no tiene sus
+             * compras en este telefono, la busqueda por codigo sigue
+             * existiendo: esta en el estado vacio de Mis vouchers.
              */
-            OutlinedButton(
-                onClick = { navController.navigate(Rutas.consultaPedido()) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Icon(
-                    Icons.Filled.ConfirmationNumber,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.size(8.dp))
-                Text("Consultar un pedido", fontWeight = FontWeight.SemiBold)
-            }
-
-            Spacer(Modifier.height(12.dp))
-
             /*
              * Vouchers (CO-13).
              *
@@ -202,6 +191,36 @@ fun PerfilScreen(
                 )
                 Spacer(Modifier.size(8.dp))
                 Text("Mis vouchers", fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            /*
+             * Mis favoritos.
+             *
+             * Lleva al catalogo con el filtro ya puesto, no a una
+             * pantalla aparte: la lista de favoritos son las mismas
+             * tarjetas, con el mismo buscador y el mismo orden. Una
+             * pantalla propia habria obligado a mantener todo eso dos
+             * veces.
+             *
+             * Hacia falta este acceso porque el filtro vive en un chip
+             * entre las categorias, donde no se encuentra si no se sabe
+             * que esta ahi.
+             */
+            OutlinedButton(
+                onClick = { navController.navigate(Rutas.ofertasFavoritas()) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.size(8.dp))
+                Text("Mis favoritos", fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(12.dp))

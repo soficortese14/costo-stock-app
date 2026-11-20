@@ -4,6 +4,7 @@ import android.content.Context
 import cl.duoc.costostock.data.room.AppDatabase
 import cl.duoc.costostock.data.room.CarritoEntity
 import cl.duoc.costostock.data.room.ItemCarrito
+import cl.duoc.costostock.domain.Configuracion
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -65,12 +66,16 @@ class CarritoRepository(context: Context) {
 
     companion object {
         /**
-         * Comision de la plataforma, que el cliente pidio sumar al precio
-         * final. El porcentaje es referencial para el prototipo academico:
-         * en produccion vendria del backend, porque cambia por volumen de
-         * ventas segun el modelo de negocio de Costo Stock.
+         * Comision de la plataforma, que el cliente pidio sumar al
+         * precio final.
+         *
+         * Sale de assets/config.json y no de una constante, porque es
+         * una decision comercial y no tecnica: cambia por volumen de
+         * ventas segun el modelo de negocio de Costo Stock. El dia que
+         * exista el backend, vendra de ahi y esta linea no cambia.
          */
-        const val PORCENTAJE_COMISION = 8
+        val PORCENTAJE_COMISION: Int
+            get() = Configuracion.vigente().comisionPorcentaje
 
         /**
          * Arma el resumen de la compra a los precios que corren ahora.

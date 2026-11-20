@@ -22,6 +22,23 @@ object Rutas {
     const val OFERTAS = "ofertas"
 
     /*
+     * Catalogo filtrado por favoritos.
+     *
+     * No es una pantalla aparte: es el mismo catalogo con el filtro ya
+     * puesto. Duplicar la pantalla solo para mostrar una lista mas corta
+     * obligaria a mantener dos veces las tarjetas, el buscador y el
+     * orden.
+     *
+     * El argumento es opcional para que Rutas.OFERTAS siga sirviendo tal
+     * cual desde el resto de la app.
+     */
+    const val ARG_SOLO_FAVORITOS = "favoritos"
+    const val OFERTAS_CON_FILTRO = "ofertas?$ARG_SOLO_FAVORITOS={$ARG_SOLO_FAVORITOS}"
+
+    /** ofertasFavoritas() devuelve la ruta con el filtro activo. */
+    fun ofertasFavoritas(): String = "ofertas?favoritos=true"
+
+    /*
      * Detalle de producto (CO-05).
      *
      * Esta ruta lleva un argumento: el id de la oferta que hay que mostrar.

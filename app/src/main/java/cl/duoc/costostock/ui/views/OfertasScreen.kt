@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
@@ -43,6 +45,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -76,6 +82,8 @@ import cl.duoc.costostock.ui.viewmodel.OrdenCatalogo
 @Composable
 fun OfertasScreen(
     navController: NavHostController,
+    /** true si se llega desde "Mis favoritos": el filtro arranca puesto. */
+    soloFavoritosInicial: Boolean = false,
     viewModel: OfertasViewModel = viewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -88,6 +96,21 @@ fun OfertasScreen(
     val ahora by viewModel.ahora.collectAsState()
     val perfil by viewModel.perfilActivo.collectAsState()
     val orden by viewModel.orden.collectAsState()
+    val idsFavoritos by viewModel.idsFavoritos.collectAsState()
+    val soloFavoritos by viewModel.soloFavoritos.collectAsState()
+
+    /*
+     * Enciende el filtro al entrar desde Mis favoritos.
+     *
+     * Va en un LaunchedEffect con llave y no en el cuerpo del Composable
+     * porque este se vuelve a ejecutar en cada recomposicion: sin la
+     * llave, apagar el filtro a mano lo volveria a encender solo.
+     */
+    LaunchedEffect(soloFavoritosInicial) {
+        if (soloFavoritosInicial && !viewModel.soloFavoritos.value) {
+            viewModel.alternarSoloFavoritos()
+        }
+    }
     val unidadesCarrito by viewModel.unidadesCarrito.collectAsState()
 
     // Solo hay distancia que mostrar si se conoce donde esta el usuario.
@@ -225,6 +248,26 @@ fun OfertasScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            /*
+             * Aviso de que el catalogo esta filtrado por favoritos.
+             *
+             * Aparece solo con el filtro puesto. Reemplaza al chip que
+             * antes vivia entre las categorias: ese chip duplicaba el
+             * acceso que ya esta en Perfil y, al estar siempre visible,
+             * ocupaba espacio aunque no se usara.
+             *
+             * El boton para volver a ver todo es imprescindible: sin el,
+             * quien entra desde Perfil queda con el filtro puesto y sin
+             * forma de salir mas que el boton atras del sistema.
+             */
+            if (soloFavoritos) {
+                BarraFavoritos(
+                    cuantos = idsFavoritos.size,
+                    onVerTodas = { viewModel.alternarSoloFavoritos() }
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
             FilaCategorias(
                 seleccionada = categoria,
                 onSeleccionar = { viewModel.cambiarCategoria(it) }
@@ -249,7 +292,7 @@ fun OfertasScreen(
             Spacer(Modifier.height(4.dp))
 
             if (ofertas.isEmpty()) {
-                SinOfertas(busqueda)
+                SinOfertas(busqueda = busqueda, soloFavoritos = soloFavoritos)
             } else {
                 LazyColumn(
                     state = estadoLista,
@@ -270,6 +313,10 @@ fun OfertasScreen(
                                     oferta.latitud,
                                     oferta.longitud
                                 )
+                            },
+                            esFavorito = idsFavoritos.contains(oferta.id),
+                            onAlternarFavorito = {
+                                viewModel.alternarFavorito(oferta.id)
                             },
                             onClick = {
                                 navController.navigate(Rutas.detalle(oferta.id))
@@ -318,6 +365,39 @@ private fun CampoBusqueda(
 }
 
 /** Chips de categoria. El seleccionado se pinta con el verde principal. */
+/** Encabezado que avisa que la lista esta filtrada por favoritos. */
+@Composable
+private fun BarraFavoritos(cuantos: Int, onVerTodas: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Favorite,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = if (cuantos == 1) "Mostrando tu favorito"
+            else "Mostrando tus $cuantos favoritos",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onVerTodas) {
+            Text("Ver todas")
+        }
+    }
+}
+
 @Composable
 private fun FilaCategorias(
     seleccionada: String,
@@ -432,8 +512,18 @@ private fun FilaOrden(
     }
 }
 
+/**
+ * Mensaje cuando la lista queda vacia.
+ *
+ * Son tres casos distintos y cada uno necesita su texto, porque la
+ * salida es distinta: buscando se corrige la palabra, filtrando por
+ * favoritos hay que ir a guardar alguno, y filtrando por categoria se
+ * prueba con otra. Un solo mensaje generico mandaria al usuario a
+ * "probar con otra categoria" cuando el problema es que no tiene
+ * favoritos.
+ */
 @Composable
-private fun SinOfertas(busqueda: String) {
+private fun SinOfertas(busqueda: String, soloFavoritos: Boolean) {
     val buscando = busqueda.isNotBlank()
 
     // Ocupa solo el alto que necesita, no la pantalla completa: si se
@@ -446,15 +536,22 @@ private fun SinOfertas(busqueda: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = if (buscando) "Sin resultados para \"$busqueda\""
-            else "No hay ofertas en esta categoria",
+            text = when {
+                buscando -> "Sin resultados para \"$busqueda\""
+                soloFavoritos -> "Todavia no tienes favoritos"
+                else -> "No hay ofertas en esta categoria"
+            },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = if (buscando) "Revisa como esta escrito o prueba con otra palabra."
-            else "Prueba con otra categoria o amplia el radio de busqueda.",
+            text = when {
+                buscando -> "Revisa como esta escrito o prueba con otra palabra."
+                soloFavoritos -> "Toca el corazon de una oferta para guardarla " +
+                    "y encontrarla aca."
+                else -> "Prueba con otra categoria o amplia el radio de busqueda."
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
