@@ -11,6 +11,44 @@ jacoco {
 }
 
 /**
+ * Hace visible cada prueba en la terminal.
+ *
+ * Por defecto Gradle solo imprime "BUILD SUCCESSFUL" y hay que ir a
+ * buscar el informe HTML para saber que se ejecuto. Para la defensa
+ * hace falta lo contrario: que se vea el nombre de cada prueba y su
+ * resultado mientras corren.
+ *
+ * No se activa showStandardStreams: MockK escribe trazas internas en
+ * la salida de error aunque la prueba pase, y llenan la pantalla de
+ * ruido que parece un fallo sin serlo.
+ */
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+
+    // Resumen al final: cuantas pasaron, cuantas fallaron
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) {}
+        override fun beforeTest(test: TestDescriptor) {}
+        override fun afterTest(test: TestDescriptor, result: TestResult) {}
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+            // suite.parent == null solo en el nodo raiz: asi el resumen
+            // se imprime una vez y no por cada clase de prueba
+            if (suite.parent == null) {
+                println(
+                    "\nRESUMEN: ${result.testCount} pruebas - " +
+                        "${result.successfulTestCount} pasaron, " +
+                        "${result.failedTestCount} fallaron, " +
+                        "${result.skippedTestCount} omitidas"
+                )
+            }
+        }
+    })
+}
+
+/**
  * Informe de cobertura de las pruebas unitarias.
  *
  * Se corre con:  ./gradlew jacocoTestReport
