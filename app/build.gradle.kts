@@ -139,6 +139,9 @@ android {
     }
     buildFeatures {
         compose = true
+        // Genera BuildConfig.DEBUG, que usa ClienteRetrofit para no
+        // imprimir las respuestas de red en una compilacion de release.
+        buildConfig = true
     }
 }
 
@@ -174,6 +177,16 @@ dependencies {
 
     // Genera el QR del código de retiro (Java puro, sin cámara ni permisos)
     implementation(libs.zxing.core)
+
+    // Cliente HTTP para consumir la API externa (Open Food Facts) y,
+    // mas adelante, los microservicios propios en Spring Boot.
+    implementation(libs.retrofit)
+    // Convierte el JSON de la respuesta a objetos Kotlin. Usa Gson, que
+    // ya estaba en el proyecto para DataStore y para leer los assets.
+    implementation(libs.retrofit.converter.gson)
+    // Imprime en Logcat lo que se envia y se recibe. Solo en debug:
+    // en release expondria datos de los usuarios en el log del telefono.
+    debugImplementation(libs.okhttp.logging.interceptor)
 
     testImplementation(libs.junit)
     // Dobles de prueba: permiten probar ViewModel y Repository sin Room

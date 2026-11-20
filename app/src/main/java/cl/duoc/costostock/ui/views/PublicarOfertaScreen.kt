@@ -54,6 +54,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.Search
+import cl.duoc.costostock.data.ProductoExterno
+import cl.duoc.costostock.data.ResultadoBusqueda
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -103,6 +107,9 @@ fun PublicarOfertaScreen(
     val publicada by viewModel.publicada.collectAsState()
     val eliminada by viewModel.eliminada.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
+    val codigoBarras by viewModel.codigoBarras.collectAsState()
+    val resultadoApi by viewModel.resultadoApi.collectAsState()
+    val buscandoEnApi by viewModel.buscandoEnApi.collectAsState()
 
     // Un id significa que se esta editando. Es lo unico que separa los dos
     // modos: los campos, las validaciones y el guardado son los mismos.
@@ -271,6 +278,26 @@ fun PublicarOfertaScreen(
             Spacer(Modifier.height(20.dp))
 
             Titulo("Producto")
+
+            /*
+             * Busqueda en la API externa.
+             *
+             * Va antes del titulo porque es el atajo: si el producto
+             * esta en Open Food Facts, rellena titulo, peso y foto de
+             * una vez. Si no esta, o no hay internet, el formulario
+             * sigue funcionando a mano exactamente como antes.
+             */
+            BuscadorApiExterna(
+                codigo = codigoBarras,
+                buscando = buscandoEnApi,
+                resultado = resultadoApi,
+                onCodigoCambia = viewModel::cambiarCodigoBarras,
+                onBuscar = viewModel::buscarEnApi,
+                onUsar = viewModel::usarProductoDeApi,
+                onDescartar = viewModel::descartarResultadoApi
+            )
+
+            Spacer(Modifier.height(16.dp))
 
             CampoTextoValidado(
                 valor = formulario.titulo,
@@ -704,3 +731,189 @@ private fun VistaPreviaCo2(kilos: Double, cuenta: String, fuente: String) {
 
 private fun formatearMiles(monto: Int): String =
     monto.toString().reversed().chunked(3).joinToString(".").reversed()
+
+/**
+ * Buscador de productos en Open Food Facts.
+ *
+ * Es el unico punto de la app que consume la API externa. Muestra lo
+ * que encontro y espera: no rellena el formulario solo, porque los
+ * datos de Open Food Facts son colaborativos y pueden estar
+ * incompletos o equivocados. El proveedor decide si los usa.
+ */
+@Composable
+private fun BuscadorApiExterna(
+    codigo: String,
+    buscando: Boolean,
+    resultado: ResultadoBusqueda?,
+    onCodigoCambia: (String) -> Unit,
+    onBuscar: () -> Unit,
+    onUsar: (ProductoExterno) -> Unit,
+    onDescartar: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
+            CampoTextoValidado(
+                valor = codigo,
+                onValorCambia = onCodigoCambia,
+                etiqueta = "Codigo de barras",
+                placeholder = "7802920777542",
+                iconoInicial = Icons.Filled.QrCode2,
+                soporte = "Opcional: trae los datos del producto",
+                tipoTeclado = KeyboardType.Number,
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(Modifier.size(8.dp))
+
+            Button(
+                onClick = onBuscar,
+                enabled = codigo.isNotBlank() && !buscando,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .height(56.dp)
+            ) {
+                if (buscando) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Icon(Icons.Filled.Search, contentDescription = "Buscar")
+                }
+            }
+        }
+
+        // El when es exhaustivo sobre la sealed class: si manana se
+        // agrega un caso, el compilador obliga a dibujarlo.
+        when (resultado) {
+            null -> Unit
+
+            is ResultadoBusqueda.Encontrado -> TarjetaProductoApi(
+                producto = resultado.producto,
+                onUsar = { onUsar(resultado.producto) },
+                onDescartar = onDescartar
+            )
+
+            is ResultadoBusqueda.NoEncontrado -> AvisoApi(
+                texto = "Ese codigo no esta en Open Food Facts. " +
+                    "Puedes llenar el formulario a mano.",
+                esError = false
+            )
+
+            is ResultadoBusqueda.SinConexion -> AvisoApi(
+                texto = "Sin conexion. Revisa tu internet o llena el " +
+                    "formulario a mano.",
+                esError = true
+            )
+
+            is ResultadoBusqueda.Error -> AvisoApi(
+                texto = "No se pudo consultar: ${resultado.motivo}",
+                esError = true
+            )
+        }
+    }
+}
+
+/** El producto que devolvio la API, con la opcion de usarlo. */
+@Composable
+private fun TarjetaProductoApi(
+    producto: ProductoExterno,
+    onUsar: () -> Unit,
+    onDescartar: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+
+            Text(
+                text = "Encontrado en Open Food Facts",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (producto.imagenUrl != null) {
+                    AsyncImage(
+                        model = producto.imagenUrl,
+                        contentDescription = producto.nombre,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(Modifier.size(12.dp))
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = producto.tituloSugerido.ifBlank { "Sin nombre" },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+
+                    /*
+                     * El peso se destaca porque es el dato que de
+                     * verdad importa: alimenta el calculo de CO2, que
+                     * hasta ahora dependia de lo que el proveedor
+                     * escribiera a mano.
+                     */
+                    Text(
+                        text = producto.pesoKg?.let { "Peso: $it kg" }
+                            ?: "Sin peso declarado",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+
+                    if (producto.notaAmbiental != null) {
+                        Text(
+                            text = "Nota ambiental: ${producto.notaAmbiental}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onUsar,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Usar estos datos")
+                }
+                Spacer(Modifier.size(8.dp))
+                TextButton(onClick = onDescartar) {
+                    Text("Descartar")
+                }
+            }
+        }
+    }
+}
+
+/** Aviso corto cuando la consulta no entrego un producto. */
+@Composable
+private fun AvisoApi(texto: String, esError: Boolean) {
+    Text(
+        text = texto,
+        style = MaterialTheme.typography.bodySmall,
+        color = if (esError) MaterialTheme.colorScheme.error
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+    )
+}
