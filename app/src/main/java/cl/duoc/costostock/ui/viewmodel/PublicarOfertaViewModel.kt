@@ -5,6 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.costostock.data.AlmacenImagenes
 import cl.duoc.costostock.data.OfertaRepository
+import cl.duoc.costostock.data.ProductoExterno
+import cl.duoc.costostock.data.ProductoExternoRepository
+import cl.duoc.costostock.data.ResultadoBusqueda
 import cl.duoc.costostock.domain.CalculadoraCO2
 import cl.duoc.costostock.domain.Configuracion
 import cl.duoc.costostock.domain.FactoresCO2
@@ -81,6 +84,82 @@ class PublicarOfertaViewModel(application: Application) : AndroidViewModel(appli
      * del archivo de datos.
      */
     private val calculadora = CalculadoraCO2()
+
+    private val productosExternos = ProductoExternoRepository()
+
+    /** Codigo de barras que el proveedor escribe para buscar. */
+    private val _codigoBarras = MutableStateFlow("")
+    val codigoBarras: StateFlow<String> = _codigoBarras
+
+    /**
+     * En que va la consulta a la API externa.
+     *
+     * null mientras nadie ha buscado: la tarjeta de resultado no se
+     * dibuja hasta que haya algo que decir.
+     */
+    private val _resultadoApi = MutableStateFlow<ResultadoBusqueda?>(null)
+    val resultadoApi: StateFlow<ResultadoBusqueda?> = _resultadoApi
+
+    private val _buscandoEnApi = MutableStateFlow(false)
+    val buscandoEnApi: StateFlow<Boolean> = _buscandoEnApi
+
+    fun cambiarCodigoBarras(valor: String) {
+        // Solo digitos: un codigo de barras no lleva letras ni guiones
+        _codigoBarras.value = valor.filter { it.isDigit() }.take(14)
+        if (_resultadoApi.value != null) _resultadoApi.value = null
+    }
+
+    /**
+     * Consulta el producto en Open Food Facts.
+     *
+     * No rellena el formulario por su cuenta: muestra lo que encontro y
+     * espera a que el proveedor lo acepte. Es a proposito -- los datos
+     * de la API son colaborativos y pueden estar mal, y pisar en
+     * silencio lo que alguien escribio seria peor que no ofrecer nada.
+     */
+    fun buscarEnApi() {
+        val codigo = _codigoBarras.value
+        if (codigo.isBlank()) return
+
+        viewModelScope.launch {
+            _buscandoEnApi.value = true
+            _resultadoApi.value = productosExternos.buscarPorCodigo(codigo)
+            _buscandoEnApi.value = false
+        }
+    }
+
+    /**
+     * Vuelca el producto de la API en el formulario.
+     *
+     * Solo completa los campos que estan vacios y los que la API trajo
+     * con dato. Lo que el proveedor ya escribio se respeta: el manda,
+     * la API solo sugiere.
+     *
+     * El peso es el campo que mas importa de los tres, porque de el
+     * sale el CO2 evitado. Hasta ahora ese numero lo escribia el
+     * proveedor a mano.
+     */
+    fun usarProductoDeApi(producto: ProductoExterno) {
+        val actual = _formulario.value
+
+        _formulario.value = actual.copy(
+            titulo = if (actual.titulo.isBlank()) producto.tituloSugerido
+            else actual.titulo,
+            pesoKg = producto.pesoKg?.toString() ?: actual.pesoKg,
+            imagenUrl = producto.imagenUrl ?: actual.imagenUrl,
+            errorTitulo = null,
+            errorPeso = null
+        )
+
+        _mensaje.value = "Datos cargados desde Open Food Facts"
+        _resultadoApi.value = null
+        _codigoBarras.value = ""
+    }
+
+    /** Descarta el resultado sin usarlo. */
+    fun descartarResultadoApi() {
+        _resultadoApi.value = null
+    }
 
     private val _formulario = MutableStateFlow(FormularioOferta())
     val formulario: StateFlow<FormularioOferta> = _formulario
