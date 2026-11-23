@@ -33,7 +33,7 @@ fun AppNavigation(navController: NavHostController, appStateProveedor: AppStateP
 
     val preferenciasManager = remember { PreferenciasManager(context) }
     val usuarioDao = remember { AppDatabase.getInstance(context).UsuarioDAO() }
-    val usuarioRepository = remember { UsuarioRepository(usuarioDao) }
+    val usuarioRepository = remember { UsuarioRepository() }
 
     val viewModelFactory = remember {
         object : ViewModelProvider.Factory {

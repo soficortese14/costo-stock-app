@@ -21,13 +21,12 @@ class RegistroViewModel(private val repository: UsuarioRepository) : ViewModel()
     fun registrarUsuario(nombre: String, correo: String, telefono: String, clave: String) {
         viewModelScope.launch {
             // El repositorio ahora debe guardar los 4 datos
-            val fueExitoso = repository.registrarUsuario(nombre, correo, telefono, clave)
-
-            if (fueExitoso) {
+            val error = repository.registrarUsuario(nombre, correo, telefono, clave)
+            if (error == null) {
                 _registroExitoso.value = true
                 _errorGeneral.value = ""
             } else {
-                _errorGeneral.value = "Este correo ya está registrado en la aplicación"
+                _errorGeneral.value = error
             }
         }
     }

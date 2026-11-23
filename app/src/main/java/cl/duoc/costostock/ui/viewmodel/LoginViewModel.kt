@@ -73,12 +73,12 @@ class LoginViewModel(private val repository: UsuarioRepository,
         viewModelScope.launch {
             val loginExitoso = repository.validarLogin(correoIn, contrasenaIn)
 
-            if (loginExitoso){
+            val error = repository.validarLogin(correoIn, contrasenaIn)
+            if (error == null) {
                 preferenciasManager.guardarSesion(correoIn)
                 _loginExitoso.value = true
-
-            }else{
-                _errorContrasena.value = "Credenciales incorrectas"
+            } else {
+                _errorContrasena.value = error
             }
         }
     }
